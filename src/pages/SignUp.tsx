@@ -6,6 +6,22 @@ import { MeshBackdrop } from '../components/MeshBackdrop'
 
 const head = "font-['Space_Grotesk',system-ui,sans-serif] font-bold uppercase tracking-tight"
 
+const DUPLICATE_ACCOUNT_MESSAGE =
+  'It looks like you already have an account! Try logging in instead.'
+
+function looksLikeDuplicateSignupError(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('already registered') ||
+    m.includes('already been registered') ||
+    m.includes('user already exists') ||
+    m.includes('email address is already') ||
+    m.includes('address is already registered') ||
+    m.includes('user already registered') ||
+    (m.includes('duplicate') && (m.includes('user') || m.includes('email') || m.includes('key')))
+  )
+}
+
 type SignUpProps = {
   onBack: () => void
   onSwitchToLogin: () => void
@@ -27,7 +43,11 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
     const result = await signUp(email, password)
     setSubmitting(false)
     if (result.error) {
-      setError(result.error)
+      const duplicate =
+        looksLikeDuplicateSignupError(result.error) ||
+        result.code === 'user_already_exists' ||
+        result.code === 'identity_already_exists'
+      setError(duplicate ? DUPLICATE_ACCOUNT_MESSAGE : result.error)
       return
     }
     if (result.needsEmailConfirmation) {
@@ -123,15 +143,18 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-neutral-600 sm:text-sm">
+          <p className="mt-6 text-center text-xs text-gray-400">
             Already have an account?{' '}
-            <button
-              type="button"
-              onClick={onSwitchToLogin}
-              className="text-neutral-400 underline-offset-2 transition hover:text-[#00FF88] hover:underline"
+            <a
+              href="/login"
+              onClick={(e) => {
+                e.preventDefault()
+                onSwitchToLogin()
+              }}
+              className="font-medium text-gray-400 underline-offset-2 transition hover:text-cyan-400 hover:underline"
             >
               Log in
-            </button>
+            </a>
           </p>
         </motion.div>
       </div>

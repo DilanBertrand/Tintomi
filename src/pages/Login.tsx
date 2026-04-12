@@ -119,15 +119,18 @@ export function Login({ onBack, onSwitchToSignUp }: LoginProps) {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-neutral-500">
-            No account?{' '}
-            <button
-              type="button"
-              onClick={onSwitchToSignUp}
-              className="font-semibold text-[#00FF88] underline-offset-2 transition hover:underline"
+          <p className="mt-6 text-center text-xs text-gray-400">
+            Don&apos;t have an account?{' '}
+            <a
+              href="/signup"
+              onClick={(e) => {
+                e.preventDefault()
+                onSwitchToSignUp()
+              }}
+              className="font-medium text-gray-400 underline-offset-2 transition hover:text-cyan-400 hover:underline"
             >
               Sign up
-            </button>
+            </a>
           </p>
         </motion.div>
       </div>

@@ -17,7 +17,7 @@ function formatAuthError(error: AuthError): string {
 }
 
 export type SignUpResult =
-  | { error: string; needsEmailConfirmation?: undefined }
+  | { error: string; code?: string; needsEmailConfirmation?: undefined }
   | { error: null; needsEmailConfirmation?: boolean }
 
 type AuthContextValue = {
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({ email: email.trim(), password })
-    if (error) return { error: error.message || 'Could not create account.' }
+    if (error) return { error: error.message || 'Could not create account.', code: error.code }
     if (!data.session) return { error: null, needsEmailConfirmation: true }
     return { error: null }
   }, [])
