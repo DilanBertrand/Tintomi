@@ -194,7 +194,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
             <PulsingGlow accent="green" className="opacity-50" />
             <p className="relative z-10 tm-chrome-wordmark-hero">TINTOMI</p>
             <h1
-              className={`${head} relative z-10 mt-6 break-words px-1 text-[clamp(2.35rem,10.5vw,7.5rem)] font-black leading-[0.95] tracking-tighter text-white sm:mt-8 sm:px-0 sm:leading-[0.92] sm:text-[clamp(3.25rem,11vw,7.5rem)]`}
+              className={`${head} relative z-10 mx-auto mt-6 max-w-full whitespace-nowrap px-3 text-center text-[clamp(1rem,calc((100dvw-2.5rem)/11.2),7rem)] font-black leading-[0.95] tracking-tighter text-white sm:mt-8 sm:px-6 sm:leading-[0.92]`}
               style={{
                 textShadow:
                   '0 0 48px rgba(0,255,136,0.4), 0 0 100px rgba(0,255,136,0.2), 0 2px 0 rgba(0,0,0,0.5)',
