@@ -1,7 +1,22 @@
-import type { User } from '@supabase/supabase-js'
+import type { PostgrestError, User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { fallbackStreakDaysFromActivity, reconcileLoginStreak } from './streak'
 import type { ProfileRow } from '../types/profile'
+
+/** PostgREST / Postgres when `public.profiles` has not been created. */
+export function isMissingProfilesTableError(error: PostgrestError | { message?: string; code?: string }): boolean {
+  const code = 'code' in error ? String(error.code ?? '') : ''
+  const msg = (error.message ?? '').toLowerCase()
+  return (
+    code === 'PGRST205' ||
+    msg.includes('could not find the table') ||
+    msg.includes('schema cache') ||
+    (msg.includes('relation') && msg.includes('does not exist') && msg.includes('profiles'))
+  )
+}
+
+export const PROFILES_TABLE_SETUP_HINT =
+  'Cloud profiles are not set up yet. In Supabase → SQL Editor, run the SQL from `supabase/setup_profiles.sql` in this repo (or your migration file) to create `public.profiles`.'
 
 function mapProfile(row: Record<string, unknown>): ProfileRow {
   return {
@@ -18,7 +33,11 @@ function mapProfile(row: Record<string, unknown>): ProfileRow {
 export async function fetchProfile(userId: string): Promise<ProfileRow | null> {
   const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
   if (error) {
-    console.warn('[profiles] fetch failed', error.message)
+    if (isMissingProfilesTableError(error)) {
+      console.warn('[profiles] public.profiles table is missing — run supabase/setup_profiles.sql in Supabase.')
+    } else {
+      console.warn('[profiles] fetch failed', error.message)
+    }
     return null
   }
   if (!data) return null
@@ -34,6 +53,10 @@ export async function ensureProfileRow(user: User): Promise<ProfileRow | null> {
   const { data, error } = await supabase.from('profiles').insert({ id: user.id, full_name }).select().single()
 
   if (error) {
+    if (isMissingProfilesTableError(error)) {
+      console.warn('[profiles] cannot insert — public.profiles missing. Run setup_profiles.sql in Supabase.')
+      return null
+    }
     if (error.code === '23505') {
       return fetchProfile(user.id)
     }
@@ -75,7 +98,11 @@ export async function loadProfileWithStreakSync(user: User): Promise<ProfileRow 
     .single()
 
   if (error) {
-    console.warn('[profiles] streak update failed', error.message)
+    if (isMissingProfilesTableError(error)) {
+      console.warn('[profiles] streak not persisted — public.profiles missing.')
+    } else {
+      console.warn('[profiles] streak update failed', error.message)
+    }
     return {
       ...row,
       login_streak: next.streak,
@@ -102,15 +129,21 @@ export async function updateProfileFields(
 ): Promise<{ error: string | null; row: ProfileRow | null }> {
   const { data, error } = await supabase
     .from('profiles')
-    .update({
-      full_name: payload.full_name,
-      username: payload.username || null,
-    })
-    .eq('id', userId)
+    .upsert(
+      {
+        id: userId,
+        full_name: payload.full_name,
+        username: payload.username || null,
+      },
+      { onConflict: 'id' },
+    )
     .select()
     .single()
 
   if (error) {
+    if (isMissingProfilesTableError(error)) {
+      return { error: PROFILES_TABLE_SETUP_HINT, row: null }
+    }
     return { error: error.message, row: null }
   }
   return { error: null, row: mapProfile(data as Record<string, unknown>) }

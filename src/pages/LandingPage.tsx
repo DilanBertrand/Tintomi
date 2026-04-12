@@ -121,12 +121,12 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
   }, [])
 
   return (
-    <div className="relative min-h-dvh text-neutral-100">
+    <div className="relative min-h-dvh overflow-x-hidden text-neutral-100">
       <MeshBackdrop />
 
       {/* Top nav */}
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-black/55 px-2 py-3 backdrop-blur-lg sm:px-4">
-        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-2 sm:gap-x-4">
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-black/55 px-3 pb-2.5 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-lg sm:px-4 sm:pb-3 sm:pt-3">
+        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 sm:gap-x-4 sm:gap-y-2">
           <div className="flex min-w-0 items-center justify-start">
             <nav
               className="hidden items-center gap-5 text-sm font-semibold text-white/90 lg:gap-6 md:flex"
@@ -146,7 +146,7 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
           <button
             type="button"
             onClick={() => scrollToId('top')}
-            className="tm-chrome-wordmark tm-chrome-wordmark-nav justify-self-center text-center"
+            className="tm-chrome-wordmark tm-chrome-wordmark-nav min-w-0 max-w-full justify-self-center truncate px-1 text-center"
           >
             TINTOMI
           </button>
@@ -162,7 +162,7 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
           </div>
         </div>
         <nav
-          className="mx-auto mt-3 flex max-w-6xl flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-semibold text-white/85 md:hidden"
+          className="mx-auto mt-2 flex max-w-6xl flex-wrap justify-center gap-x-4 gap-y-1.5 px-1 text-[11px] font-semibold text-white/85 sm:mt-3 sm:gap-x-5 sm:text-xs md:hidden"
           aria-label="Primary mobile"
         >
           <button type="button" onClick={go('mission')} className="hover:text-[#00FF88]">
@@ -177,11 +177,11 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
         </nav>
       </header>
 
-      <main className="relative z-10 scroll-smooth pt-[5.5rem] md:pt-20">
+      <main className="relative z-10 scroll-smooth pt-[6.75rem] sm:pt-[6.5rem] md:pt-20">
         {/* Hero */}
         <section
           id="top"
-          className="relative flex min-h-screen flex-col items-center justify-center px-5 pb-12 pt-6 text-center md:px-8"
+          className="relative flex min-h-[min(100dvh,920px)] flex-col items-center justify-center overflow-x-hidden px-4 pb-12 pt-4 text-center sm:min-h-screen sm:px-5 sm:pt-6 md:px-8"
         >
           <motion.div
             className="relative z-20 mx-auto w-full max-w-5xl pointer-events-none"
@@ -192,7 +192,7 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
             <PulsingGlow accent="green" className="opacity-50" />
             <p className="relative z-10 tm-chrome-wordmark-hero">TINTOMI</p>
             <h1
-              className={`${head} relative z-10 mt-8 text-[clamp(4rem,12vw,7.5rem)] font-black leading-[0.92] tracking-tighter text-white`}
+              className={`${head} relative z-10 mt-6 break-words px-1 text-[clamp(2.35rem,10.5vw,7.5rem)] font-black leading-[0.95] tracking-tighter text-white sm:mt-8 sm:px-0 sm:leading-[0.92] sm:text-[clamp(3.25rem,11vw,7.5rem)]`}
               style={{
                 textShadow:
                   '0 0 48px rgba(0,255,136,0.4), 0 0 100px rgba(0,255,136,0.2), 0 2px 0 rgba(0,0,0,0.5)',
@@ -200,19 +200,19 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
             >
               STOP BEING BROKE.
             </h1>
-            <p className={`${body} relative z-10 mx-auto mt-8 max-w-2xl text-neutral-100`}>
+            <p className="relative z-10 mx-auto mt-6 max-w-2xl px-1 text-base leading-relaxed text-neutral-100 sm:mt-8 sm:px-0 sm:text-[1.125rem] md:text-[1.15rem]">
               Learn the money game. Trade fake cash. Flex on your friends. No gatekeeping—just real skills for the real
               world.
             </p>
             <motion.button
               type="button"
               onClick={onGoToSignUp}
-              className={`${head} relative z-30 mt-10 inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[#00FF88] px-12 py-5 text-lg font-black tracking-wide text-black shadow-[0_0_56px_rgba(0,255,136,0.55),inset_0_1px_0_0_rgba(255,255,255,0.45)] ring-2 ring-[#00FF88]/80 transition-transform hover:scale-[1.03] active:scale-[0.99] sm:px-16 sm:text-xl pointer-events-auto`}
+              className={`${head} relative z-30 mx-auto mt-8 flex w-full max-w-[min(100%,20rem)] cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-2xl bg-[#00FF88] px-8 py-4 text-base font-black tracking-wide text-black shadow-[0_0_56px_rgba(0,255,136,0.55),inset_0_1px_0_0_rgba(255,255,255,0.45)] ring-2 ring-[#00FF88]/80 transition-transform hover:scale-[1.03] active:scale-[0.99] sm:mt-10 sm:inline-flex sm:w-auto sm:max-w-none sm:px-12 sm:py-5 sm:text-lg md:px-16 md:text-xl pointer-events-auto`}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.98 }}
             >
               START GRINDING
-              <ArrowRight className="h-6 w-6" strokeWidth={2.5} aria-hidden />
+              <ArrowRight className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" strokeWidth={2.5} aria-hidden />
             </motion.button>
             <p className="relative z-10 mt-8 text-sm text-neutral-400">Simulator. Not financial advice.</p>
           </motion.div>
@@ -276,7 +276,7 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
                 >
                   <GlowCard accent={item.accent} className="h-full">
                     <div className="flex min-h-0 flex-1 flex-col gap-4">
-                      <div className="flex shrink-0 items-start justify-between gap-3">
+                      <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                         <span className={`${head} text-4xl font-black text-white/20 sm:text-5xl`}>{item.step}</span>
                         <item.icon className="h-10 w-10 shrink-0 text-white/90" strokeWidth={1.75} aria-hidden />
                       </div>
@@ -299,7 +299,7 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
               <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.05 }} className="relative h-full min-h-0">
                 <GlowCard accent="green" className="h-full">
                   <div className="flex min-h-0 flex-1 flex-col gap-4">
-                    <div className="flex shrink-0 items-center gap-3">
+                    <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
                       <Zap className={`${featureIconClass} text-[#00FF88]`} strokeWidth={featureIconStroke} aria-hidden />
                       <h3 className={featureCardHeadline}>THE SIM</h3>
                     </div>
@@ -316,7 +316,7 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
               <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.12 }} className="relative h-full min-h-0">
                 <GlowCard accent="blue" className="h-full">
                   <div className="flex min-h-0 flex-1 flex-col gap-4">
-                    <div className="flex shrink-0 items-center gap-3">
+                    <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
                       <Flame className={`${featureIconClass} text-sky-300`} strokeWidth={featureIconStroke} aria-hidden />
                       <h3 className={featureCardHeadline}>BRAIN GAINS</h3>
                     </div>
@@ -330,7 +330,7 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
               <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.18 }} className="relative h-full min-h-0">
                 <GlowCard accent="violet" className="h-full">
                   <div className="flex min-h-0 flex-1 flex-col gap-4">
-                    <div className="flex shrink-0 items-center gap-3">
+                    <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
                       <Users className={`${featureIconClass} text-violet-300`} strokeWidth={featureIconStroke} aria-hidden />
                       <h3 className={featureCardHeadline}>THE SQUAD</h3>
                     </div>
@@ -398,7 +398,7 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
             <motion.button
               type="button"
               onClick={onGoToSignUp}
-              className={`${head} mt-8 inline-flex items-center gap-2 rounded-2xl bg-[#00FF88] px-10 py-4 text-base font-black text-black shadow-[0_0_48px_rgba(0,255,136,0.45)] sm:text-lg`}
+              className={`${head} mx-auto mt-8 flex w-full max-w-[min(100%,18rem)] touch-manipulation items-center justify-center gap-2 rounded-2xl bg-[#00FF88] px-8 py-3.5 text-sm font-black text-black shadow-[0_0_48px_rgba(0,255,136,0.45)] sm:inline-flex sm:w-auto sm:max-w-none sm:px-10 sm:py-4 sm:text-base md:text-lg`}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -412,7 +412,7 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
       <motion.button
         type="button"
         onClick={() => scrollToId('mission')}
-        className="fixed bottom-12 left-1/2 z-50 -translate-x-1/2 cursor-pointer rounded-full p-3 text-[#00FF88] outline-none transition hover:scale-105 hover:text-white focus-visible:ring-2 focus-visible:ring-[#00FF88]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030712] md:bottom-16"
+        className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 cursor-pointer rounded-full p-3 text-[#00FF88] outline-none transition hover:scale-105 hover:text-white focus-visible:ring-2 focus-visible:ring-[#00FF88]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030712] sm:bottom-12 md:bottom-16"
         aria-label="Scroll to next section"
         aria-hidden={!showHeroScrollCue}
         tabIndex={showHeroScrollCue ? 0 : -1}

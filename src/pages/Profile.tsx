@@ -8,7 +8,7 @@ import { ProfileSettingsModal } from '../components/ProfileSettingsModal'
 import { ProgressBar } from '../components/ProgressBar'
 import { StaggerPage } from '../components/StaggerPage'
 import { getDisplayName } from '../lib/displayName'
-import { streakForDisplay } from '../lib/profiles'
+import { PROFILES_TABLE_SETUP_HINT, streakForDisplay } from '../lib/profiles'
 
 type ProfileProps = {
   xp: number
@@ -76,6 +76,9 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
           <div className="mt-4">
             <ProgressBar value={xpInto} max={100} label="XP / 100 in this level" />
           </div>
+          {user && profile === null ? (
+            <p className="mt-3 text-xs leading-relaxed text-amber-200/90">{PROFILES_TABLE_SETUP_HINT}</p>
+          ) : null}
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button
               type="button"

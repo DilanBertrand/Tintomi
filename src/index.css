@@ -85,6 +85,13 @@ body.tm-dashboard {
   }
 }
 
+@media (max-width: 380px) {
+  .tm-chrome-wordmark-nav {
+    font-size: 0.5rem;
+    letter-spacing: 0.22em;
+  }
+}
+
 /* In-app top bar — centered, scaled with viewport */
 .tm-chrome-wordmark-app {
   font-family: 'Space Grotesk', system-ui, sans-serif;

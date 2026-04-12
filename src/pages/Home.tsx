@@ -52,9 +52,9 @@ const trending = [
   { id: 't3', title: 'Nike retail reset', sub: 'Inventory normalization continues.', hot: false },
 ]
 
-/** Three cards per viewport row; gap-4 = 1rem → two gaps between three cards */
+/** Narrow: one readable card width; sm+: three-across strip (gap-4 = 1rem) */
 const storyCardBase =
-  'data-learn-card flex min-h-[240px] w-[calc((100%-2rem)/3)] min-w-[calc((100%-2rem)/3)] max-w-[calc((100%-2rem)/3)] flex-none snap-start snap-always flex-col rounded-3xl border border-white/10 bg-white/5 p-4 text-left shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_0_36px_rgba(0,255,136,0.08)] backdrop-blur-md transition-all duration-300 hover:border-white/15 hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_0_48px_rgba(0,255,136,0.15)] sm:p-5'
+  'data-learn-card flex min-h-[220px] w-[min(100%,17.5rem)] min-w-[min(100%,17.5rem)] max-w-[17.5rem] flex-none snap-start snap-always flex-col rounded-3xl border border-white/10 bg-white/5 p-4 text-left shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_0_36px_rgba(0,255,136,0.08)] backdrop-blur-md transition-all duration-300 hover:border-white/15 hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_0_48px_rgba(0,255,136,0.15)] sm:min-h-[240px] sm:w-[calc((100%-2rem)/3)] sm:min-w-[calc((100%-2rem)/3)] sm:max-w-[calc((100%-2rem)/3)] sm:p-5'
 
 type HomeProps = {
   onNavigate: (tab: TabId) => void
@@ -82,10 +82,10 @@ export function Home({ onNavigate }: HomeProps) {
   }
 
   return (
-    <div className="pb-28">
+    <div className="overflow-x-hidden pb-28">
       {/* Top hero */}
       <motion.header
-        className="text-center"
+        className="px-2 text-center sm:px-0"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
@@ -120,17 +120,17 @@ export function Home({ onNavigate }: HomeProps) {
                 t.hot ? 'ring-1 ring-[#00FF88]/30 shadow-[0_0_32px_rgba(0,255,136,0.12)]' : ''
               }`}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-sm font-bold uppercase tracking-tight text-white">{t.title}</p>
                   <p className="mt-1 text-[1.05rem] leading-relaxed text-neutral-300">{t.sub}</p>
                 </div>
                 {t.hot ? (
-                  <span className="shrink-0 rounded-full bg-gradient-to-r from-orange-500/90 to-rose-600/90 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-[0_0_20px_rgba(251,146,60,0.45)]">
+                  <span className="w-fit shrink-0 self-start rounded-full bg-gradient-to-r from-orange-500/90 to-rose-600/90 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-[0_0_20px_rgba(251,146,60,0.45)] sm:self-auto">
                     Hot
                   </span>
                 ) : (
-                  <span className="shrink-0 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-neutral-400 backdrop-blur-sm">
+                  <span className="w-fit shrink-0 self-start rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-neutral-400 backdrop-blur-sm sm:self-auto">
                     Watch
                   </span>
                 )}
@@ -148,12 +148,12 @@ export function Home({ onNavigate }: HomeProps) {
         viewport={{ once: true, margin: '-5%' }}
         transition={{ duration: 0.45, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="mb-4 flex items-center justify-between gap-3 px-1">
+        <div className="mb-4 flex flex-col gap-2 px-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <h2 className="tm-headline min-w-0 text-sm font-black uppercase tracking-tight sm:text-base">Learn in 60s</h2>
           <button
             type="button"
             onClick={goLearnTab}
-            className="group flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/5 py-2 pl-3 pr-2 text-xs font-bold uppercase tracking-wide text-[#00FF88] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] backdrop-blur-md transition hover:border-[#00FF88]/35 hover:bg-white/[0.08] sm:text-sm"
+            className="group flex w-fit shrink-0 items-center gap-1 self-start rounded-full border border-white/10 bg-white/5 py-2 pl-3 pr-2 text-xs font-bold uppercase tracking-wide text-[#00FF88] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] backdrop-blur-md transition hover:border-[#00FF88]/35 hover:bg-white/[0.08] sm:self-auto sm:text-sm"
           >
             View all
             <ChevronRight
@@ -164,11 +164,11 @@ export function Home({ onNavigate }: HomeProps) {
           </button>
         </div>
 
-        <div className="relative z-10 overflow-visible px-5 sm:px-6">
+        <div className="relative z-10 overflow-visible px-3 sm:px-6">
           <button
             type="button"
             onClick={scrollLearnStripLeft}
-            className="absolute left-[-20px] top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/50 text-neutral-200 shadow-md backdrop-blur-md transition hover:border-[#00FF88]/55 hover:text-[#00FF88] hover:shadow-[0_0_22px_rgba(0,255,136,0.45),0_0_40px_rgba(0,255,136,0.15)]"
+            className="absolute left-1 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/50 text-neutral-200 shadow-md backdrop-blur-md transition hover:border-[#00FF88]/55 hover:text-[#00FF88] hover:shadow-[0_0_22px_rgba(0,255,136,0.45),0_0_40px_rgba(0,255,136,0.15)] sm:flex sm:left-0 md:left-[-8px]"
             aria-label="Scroll learn cards left"
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.25} aria-hidden />
@@ -176,7 +176,7 @@ export function Home({ onNavigate }: HomeProps) {
           <button
             type="button"
             onClick={scrollLearnStripRight}
-            className="absolute right-[-20px] top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/50 text-neutral-200 shadow-md backdrop-blur-md transition hover:border-[#00FF88]/55 hover:text-[#00FF88] hover:shadow-[0_0_22px_rgba(0,255,136,0.45),0_0_40px_rgba(0,255,136,0.15)]"
+            className="absolute right-1 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/50 text-neutral-200 shadow-md backdrop-blur-md transition hover:border-[#00FF88]/55 hover:text-[#00FF88] hover:shadow-[0_0_22px_rgba(0,255,136,0.45),0_0_40px_rgba(0,255,136,0.15)] sm:flex sm:right-0 md:right-[-8px]"
             aria-label="Scroll learn cards right"
           >
             <ChevronRight className="h-5 w-5" strokeWidth={2.25} aria-hidden />
@@ -197,7 +197,7 @@ export function Home({ onNavigate }: HomeProps) {
                   onClick={goLearnTab}
                   className={storyCardBase}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
                     <div
                       className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${c.iconClass} shadow-[inset_0_2px_0_0_rgba(255,255,255,0.25)] ring-1 ring-white/15`}
                     >

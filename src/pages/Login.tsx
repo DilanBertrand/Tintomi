@@ -6,6 +6,9 @@ import { MeshBackdrop } from '../components/MeshBackdrop'
 
 const head = "font-['Space_Grotesk',system-ui,sans-serif] font-bold uppercase tracking-tight"
 
+const FRIENDLY_LOGIN_HINT =
+  "Hmm, that email or password doesn't look right. Please try again."
+
 type LoginProps = {
   onBack: () => void
   onSwitchToSignUp: () => void
@@ -25,7 +28,12 @@ export function Login({ onBack, onSwitchToSignUp }: LoginProps) {
     const { error: err } = await signIn(email, password)
     setSubmitting(false)
     if (err) {
-      setError(err)
+      const lower = err.toLowerCase()
+      const looksLikeBadCredentials =
+        lower.includes('invalid login') ||
+        lower.includes('invalid email or password') ||
+        err === 'Invalid login credentials.'
+      setError(looksLikeBadCredentials ? FRIENDLY_LOGIN_HINT : err)
       return
     }
     window.history.replaceState(null, '', '/home')
