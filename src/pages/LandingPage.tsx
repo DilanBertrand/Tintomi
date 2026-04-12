@@ -194,17 +194,17 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
             <PulsingGlow accent="green" className="opacity-50" />
             <p className="relative z-10 tm-chrome-wordmark-hero">TINTOMI</p>
             <h1
-              className={`${head} relative z-10 mx-auto mt-6 max-w-full whitespace-nowrap px-3 text-center text-[clamp(1rem,calc((100dvw-2.5rem)/11.2),7rem)] font-black leading-[0.95] tracking-tighter text-white sm:mt-8 sm:px-6 sm:leading-[0.92]`}
+              className={`${head} relative z-10 mx-auto mt-6 max-w-4xl px-3 text-center text-[clamp(1.35rem,calc((100dvw-2.5rem)/10),3.75rem)] font-black leading-[1.02] tracking-tighter text-white text-balance sm:mt-8 sm:px-6 sm:leading-[0.98]`}
               style={{
                 textShadow:
                   '0 0 48px rgba(0,255,136,0.4), 0 0 100px rgba(0,255,136,0.2), 0 2px 0 rgba(0,0,0,0.5)',
               }}
             >
-              Grow your money.
+              Grow your money as a teen—learn finance & trading
             </h1>
             <p className="relative z-10 mx-auto mt-6 max-w-2xl px-1 text-base leading-relaxed text-neutral-100 sm:mt-8 sm:px-0 sm:text-[1.125rem] md:text-[1.15rem]">
-              Learn the money game. Trade fake cash. Flex on your friends. No gatekeeping—just real skills for the real
-              world.
+              Master the money game as a teen with Tintomi. Learn to trade, manage assets, and grow your wealth in a
+              risk-free finance simulator. No gatekeeping—just real skills.
             </p>
             <motion.a
               href="/signup"
