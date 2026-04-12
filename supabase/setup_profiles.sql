@@ -69,3 +69,23 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row
   execute function public.handle_new_user();
+
+-- Sign-up precheck (email confirmation ON): existing user + profile row for this email.
+create or replace function public.profile_exists_for_email(check_email text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from auth.users u
+    inner join public.profiles p on p.id = u.id
+    where lower(u.email) = lower(trim(check_email))
+      and nullif(trim(check_email), '') is not null
+  );
+$$;
+
+revoke all on function public.profile_exists_for_email(text) from public;
+grant execute on function public.profile_exists_for_email(text) to anon, authenticated;

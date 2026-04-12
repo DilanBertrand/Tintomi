@@ -3,11 +3,11 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { MeshBackdrop } from '../components/MeshBackdrop'
+import { profileExistsForEmail } from '../lib/profiles'
 
 const head = "font-['Space_Grotesk',system-ui,sans-serif] font-bold uppercase tracking-tight"
 
-const DUPLICATE_ACCOUNT_MESSAGE =
-  'It looks like you already have an account! Try logging in instead.'
+const ALREADY_REGISTERED_MESSAGE = 'You already have an account! Please log in.'
 
 function looksLikeDuplicateSignupError(message: string): boolean {
   const m = message.toLowerCase()
@@ -40,6 +40,14 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
     setError(null)
     setInfo(null)
     setSubmitting(true)
+
+    const { exists: profileAlready, skipped: profileCheckSkipped } = await profileExistsForEmail(email)
+    if (!profileCheckSkipped && profileAlready) {
+      setSubmitting(false)
+      setError(ALREADY_REGISTERED_MESSAGE)
+      return
+    }
+
     const result = await signUp(email, password)
     setSubmitting(false)
     if (result.error) {
@@ -47,7 +55,7 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
         looksLikeDuplicateSignupError(result.error) ||
         result.code === 'user_already_exists' ||
         result.code === 'identity_already_exists'
-      setError(duplicate ? DUPLICATE_ACCOUNT_MESSAGE : result.error)
+      setError(duplicate ? ALREADY_REGISTERED_MESSAGE : result.error)
       return
     }
     if (result.needsEmailConfirmation) {

@@ -6,7 +6,6 @@ import { MeshBackdrop } from '../components/MeshBackdrop'
 import { Sparkline } from '../components/Sparkline'
 
 type LandingPageProps = {
-  onGoToLogin: () => void
   onGoToSignUp: () => void
 }
 
@@ -109,7 +108,7 @@ const featureIconClass = 'h-10 w-10 shrink-0'
 const featureIconStroke = 1.75
 const featureCardHeadline = `${head} text-2xl font-black leading-tight tracking-tight text-white`
 
-export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
+export function LandingPage({ onGoToSignUp }: LandingPageProps) {
   const go = useCallback((id: string) => () => scrollToId(id), [])
   const [showHeroScrollCue, setShowHeroScrollCue] = useState(true)
 
@@ -151,14 +150,17 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
             TINTOMI
           </button>
           <div className="flex min-w-0 justify-end justify-self-end">
-            <button
-              type="button"
-              onClick={onGoToLogin}
-              className={`${head} shrink-0 rounded-xl border border-[#00FF88]/50 bg-[#00FF88]/15 px-2.5 py-2 text-[10px] font-black tracking-wide text-[#00FF88] shadow-[0_0_24px_rgba(0,255,136,0.25)] transition hover:bg-[#00FF88]/25 min-[400px]:px-3 min-[400px]:text-xs sm:px-5 sm:py-2.5 sm:text-sm`}
+            <a
+              href="/signup"
+              onClick={(e) => {
+                e.preventDefault()
+                onGoToSignUp()
+              }}
+              className={`${head} inline-flex shrink-0 items-center justify-center rounded-xl border border-[#00FF88]/50 bg-[#00FF88]/15 px-2.5 py-2 text-[10px] font-black tracking-wide text-[#00FF88] shadow-[0_0_24px_rgba(0,255,136,0.25)] transition hover:bg-[#00FF88]/25 min-[400px]:px-3 min-[400px]:text-xs sm:px-5 sm:py-2.5 sm:text-sm`}
             >
               <span className="hidden min-[400px]:inline">Login / Sign Up</span>
-              <span className="min-[400px]:hidden">Log in</span>
-            </button>
+              <span className="min-[400px]:hidden">Sign up</span>
+            </a>
           </div>
         </div>
         <nav
@@ -198,22 +200,25 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
                   '0 0 48px rgba(0,255,136,0.4), 0 0 100px rgba(0,255,136,0.2), 0 2px 0 rgba(0,0,0,0.5)',
               }}
             >
-              STOP BEING BROKE.
+              Grow your money.
             </h1>
             <p className="relative z-10 mx-auto mt-6 max-w-2xl px-1 text-base leading-relaxed text-neutral-100 sm:mt-8 sm:px-0 sm:text-[1.125rem] md:text-[1.15rem]">
               Learn the money game. Trade fake cash. Flex on your friends. No gatekeeping—just real skills for the real
               world.
             </p>
-            <motion.button
-              type="button"
-              onClick={onGoToSignUp}
+            <motion.a
+              href="/signup"
+              onClick={(e) => {
+                e.preventDefault()
+                onGoToSignUp()
+              }}
               className={`${head} relative z-30 mx-auto mt-8 flex w-full max-w-[min(100%,20rem)] cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-2xl bg-[#00FF88] px-8 py-4 text-base font-black tracking-wide text-black shadow-[0_0_56px_rgba(0,255,136,0.55),inset_0_1px_0_0_rgba(255,255,255,0.45)] ring-2 ring-[#00FF88]/80 transition-transform hover:scale-[1.03] active:scale-[0.99] sm:mt-10 sm:inline-flex sm:w-auto sm:max-w-none sm:px-12 sm:py-5 sm:text-lg md:px-16 md:text-xl pointer-events-auto`}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.98 }}
             >
               START GRINDING
               <ArrowRight className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" strokeWidth={2.5} aria-hidden />
-            </motion.button>
+            </motion.a>
             <p className="relative z-10 mt-8 text-sm text-neutral-400">Simulator. Not financial advice.</p>
           </motion.div>
         </section>
@@ -395,16 +400,19 @@ export function LandingPage({ onGoToLogin, onGoToSignUp }: LandingPageProps) {
           >
             <p className={`${head} text-[clamp(2rem,4vw,3rem)] font-black text-white`}>READY TO RUN IT UP?</p>
             <p className={`${body} mx-auto mt-4 max-w-xl text-neutral-200`}>Jump in. The sim is live. Your squad is waiting.</p>
-            <motion.button
-              type="button"
-              onClick={onGoToSignUp}
+            <motion.a
+              href="/signup"
+              onClick={(e) => {
+                e.preventDefault()
+                onGoToSignUp()
+              }}
               className={`${head} mx-auto mt-8 flex w-full max-w-[min(100%,18rem)] touch-manipulation items-center justify-center gap-2 rounded-2xl bg-[#00FF88] px-8 py-3.5 text-sm font-black text-black shadow-[0_0_48px_rgba(0,255,136,0.45)] sm:inline-flex sm:w-auto sm:max-w-none sm:px-10 sm:py-4 sm:text-base md:text-lg`}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
             >
               START GRINDING
               <ArrowRight className="h-5 w-5" strokeWidth={2.5} aria-hidden />
-            </motion.button>
+            </motion.a>
           </motion.div>
         </section>
       </main>

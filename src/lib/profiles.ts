@@ -18,6 +18,25 @@ export function isMissingProfilesTableError(error: PostgrestError | { message?: 
 export const PROFILES_TABLE_SETUP_HINT =
   'Cloud profiles are not set up yet. In Supabase → SQL Editor, run the SQL from `supabase/setup_profiles.sql` in this repo (or your migration file) to create `public.profiles`.'
 
+/** Pre-signup: true if this email already has an auth user with a profiles row (RPC must exist in DB). */
+export async function profileExistsForEmail(email: string): Promise<{ exists: boolean; skipped: boolean }> {
+  const trimmed = email.trim()
+  if (!trimmed) return { exists: false, skipped: true }
+
+  const { data, error } = await supabase.rpc('profile_exists_for_email', { check_email: trimmed })
+
+  if (error) {
+    if (isMissingProfilesTableError(error)) {
+      console.warn('[profiles] profile_exists_for_email — profiles table missing.')
+    } else {
+      console.warn('[profiles] profile_exists_for_email RPC failed', error.message)
+    }
+    return { exists: false, skipped: true }
+  }
+
+  return { exists: data === true, skipped: false }
+}
+
 function mapProfile(row: Record<string, unknown>): ProfileRow {
   return {
     id: String(row.id),

@@ -279,7 +279,7 @@ export default function App() {
     }
     return (
       <div className="min-h-dvh bg-[#030712] text-gray-100">
-        <LandingPage onGoToLogin={() => setAuthGateView('login')} onGoToSignUp={() => setAuthGateView('signup')} />
+        <LandingPage onGoToSignUp={() => setAuthGateView('signup')} />
       </div>
     )
   }
