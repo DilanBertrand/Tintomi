@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card } from '../components/Card'
 import { StaggerPage } from '../components/StaggerPage'
+import { localProgressKeys } from '../lib/localProgress'
 
 type LeaderRow = { name: string; xp: number; rank: number; you?: boolean }
 
@@ -25,13 +26,54 @@ const POLL_OPTIONS = [
 const POLL_RESULT_PCTS: readonly [number, number, number] = [45, 30, 25]
 
 type CommunityProps = {
+  userId: string
   userXp: number
   youDisplayName: string
 }
 
-export function Community({ userXp, youDisplayName }: CommunityProps) {
+export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isJoined, setIsJoined] = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    try {
+      const raw = localStorage.getItem(localProgressKeys.communityPoll(userId))
+      if (raw === null) return
+      const n = Number.parseInt(raw, 10)
+      if (Number.isInteger(n) && n >= 0 && n < POLL_OPTIONS.length) setSelectedOption(n)
+    } catch {
+      /* ignore */
+    }
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return
+    try {
+      const raw = localStorage.getItem(localProgressKeys.communityChallengeJoined(userId))
+      setIsJoined(raw === '1' || raw === 'true')
+    } catch {
+      /* ignore */
+    }
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId || selectedOption === null) return
+    try {
+      localStorage.setItem(localProgressKeys.communityPoll(userId), String(selectedOption))
+    } catch {
+      /* ignore */
+    }
+  }, [userId, selectedOption])
+
+  useEffect(() => {
+    if (!userId || !isJoined) return
+    try {
+      localStorage.setItem(localProgressKeys.communityChallengeJoined(userId), '1')
+    } catch {
+      /* ignore */
+    }
+  }, [userId, isJoined])
 
   const rows = useMemo((): LeaderRow[] => {
     const youRow: LeaderRow = { name: youDisplayName, xp: userXp, rank: 0, you: true }

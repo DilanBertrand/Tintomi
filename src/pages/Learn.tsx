@@ -8,6 +8,8 @@ import { levels, XP_PER_LESSON, type Lesson } from '../data/lessons'
 import { themeForLevel } from '../learn-themes'
 import { fadeSlideUp } from '../motion/variants'
 
+/** Total XP and completed lesson IDs persist in the browser via `App` and `lib/localProgress.ts`. */
+
 type LearnProps = {
   xp: number
   onAddXp: (amount: number) => void

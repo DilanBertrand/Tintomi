@@ -14,6 +14,7 @@ import { Login } from './pages/Login'
 import { Profile } from './pages/Profile'
 import { SignUp } from './pages/SignUp'
 import { fetchCandleCloses } from './lib/finnhub'
+import { localProgressKeys } from './lib/localProgress'
 import { getDisplayName, truncateForNav } from './lib/displayName'
 import { pathToTab, tabToPath } from './lib/routes'
 
@@ -79,6 +80,7 @@ export default function App() {
   const [tab, setTab] = useState<TabId>('home')
   const [xp, setXp] = useState(0)
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([])
+  const [learnPersistReady, setLearnPersistReady] = useState(false)
   const [{ balance, portfolio }, dispatchWallet] = useReducer(walletReducer, {
     balance: 1000,
     portfolio: {},
@@ -97,6 +99,59 @@ export default function App() {
     else document.body.classList.remove('tm-dashboard')
     return () => document.body.classList.remove('tm-dashboard')
   }, [isLoggedIn])
+
+  /** Load Learn XP + completed lessons from localStorage after auth settles; reset when logged out */
+  useEffect(() => {
+    if (authLoading) return
+    if (!user?.id) {
+      setXp(0)
+      setCompletedLessonIds([])
+      setLearnPersistReady(false)
+      return
+    }
+    try {
+      const xpRaw = localStorage.getItem(localProgressKeys.learnXp(user.id))
+      if (xpRaw !== null) {
+        const n = Number(xpRaw)
+        if (Number.isFinite(n) && n >= 0) setXp(Math.floor(n))
+      } else {
+        setXp(0)
+      }
+      const lessonsRaw = localStorage.getItem(localProgressKeys.learnCompletedLessons(user.id))
+      if (lessonsRaw !== null) {
+        const parsed: unknown = JSON.parse(lessonsRaw)
+        if (Array.isArray(parsed) && parsed.every((x): x is string => typeof x === 'string')) {
+          setCompletedLessonIds(parsed)
+        } else {
+          setCompletedLessonIds([])
+        }
+      } else {
+        setCompletedLessonIds([])
+      }
+    } catch {
+      setXp(0)
+      setCompletedLessonIds([])
+    }
+    setLearnPersistReady(true)
+  }, [user?.id, authLoading])
+
+  useEffect(() => {
+    if (!user?.id || !learnPersistReady) return
+    try {
+      localStorage.setItem(localProgressKeys.learnXp(user.id), String(xp))
+    } catch {
+      /* quota / private mode */
+    }
+  }, [user?.id, xp, learnPersistReady])
+
+  useEffect(() => {
+    if (!user?.id || !learnPersistReady) return
+    try {
+      localStorage.setItem(localProgressKeys.learnCompletedLessons(user.id), JSON.stringify(completedLessonIds))
+    } catch {
+      /* quota / private mode */
+    }
+  }, [user?.id, completedLessonIds, learnPersistReady])
 
   useEffect(() => {
     if (isLoggedIn) setAuthGateView('landing')
@@ -321,7 +376,7 @@ export default function App() {
                 onSell={sell}
               />
             ) : null}
-            {tab === 'community' ? <Community userXp={xp} youDisplayName={displayName} /> : null}
+            {tab === 'community' ? <Community userId={user.id} userXp={xp} youDisplayName={displayName} /> : null}
             {tab === 'profile' ? <Profile xp={xp} portfolioValue={portfolioValue} /> : null}
           </motion.div>
         </AnimatePresence>
