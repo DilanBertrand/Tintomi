@@ -15,13 +15,22 @@ const leaderboardOthers: LeaderRow[] = [
 const rowGlass =
   'flex items-center justify-between rounded-xl border border-[#222222] bg-white/5 px-3 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-[#2a2a2a] hover:shadow-[0_0_20px_rgba(0,255,136,0.06)]'
 
+const POLL_OPTIONS = [
+  'Subscriptions stacking silently',
+  'Impulse buys on “deals”',
+  'Trying to time the market',
+] as const
+
+/** Simulated community vote distribution (shown after casting). */
+const POLL_RESULT_PCTS: readonly [number, number, number] = [45, 30, 25]
+
 type CommunityProps = {
   userXp: number
   youDisplayName: string
 }
 
 export function Community({ userXp, youDisplayName }: CommunityProps) {
-  const [poll, setPoll] = useState<number | null>(null)
+  const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isJoined, setIsJoined] = useState(false)
 
   const rows = useMemo((): LeaderRow[] => {
@@ -94,30 +103,42 @@ export function Community({ userXp, youDisplayName }: CommunityProps) {
             What&apos;s the biggest money trap right now?
           </p>
           <div className="mt-4 space-y-2">
-            {[
-              'Subscriptions stacking silently',
-              'Impulse buys on “deals”',
-              'Trying to time the market',
-            ].map((opt, idx) => {
-              const active = poll === idx
+            {POLL_OPTIONS.map((opt, idx) => {
+              const voted = selectedOption !== null
+              const isSelected = selectedOption === idx
+              const showResults = voted
+
               return (
                 <button
                   key={opt}
                   type="button"
-                  onClick={() => setPoll(idx)}
-                  className={`w-full rounded-lg border-x border-b px-3 py-3 text-left text-sm font-medium transition-colors duration-200 ${
-                    active
-                      ? 'border-t border-t-white/25 border-[#00FF88]/40 bg-[#00FF88]/10 text-[#00FF88]'
-                      : 'border-t border-t-white/15 border-white/10 bg-white/5 text-gray-200 hover:bg-white/[0.08]'
+                  disabled={voted}
+                  aria-pressed={voted ? isSelected : undefined}
+                  onClick={() => setSelectedOption(idx)}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-all duration-200 ${
+                    voted
+                      ? isSelected
+                        ? 'cursor-default border border-[#00FF88]/55 bg-[#00FF88]/12 text-[#00FF88] shadow-[0_0_24px_rgba(0,255,136,0.12)]'
+                        : 'cursor-default border border-white/[0.07] bg-white/[0.02] text-gray-500 opacity-50'
+                      : 'border border-white/10 border-t-white/15 bg-white/5 text-gray-200 hover:bg-white/[0.08] active:scale-[0.99]'
                   }`}
                 >
-                  {opt}
+                  <span className="min-w-0 flex-1">{opt}</span>
+                  {showResults ? (
+                    <span
+                      className={`shrink-0 font-mono text-sm tabular-nums ${
+                        isSelected ? 'font-semibold text-[#00FF88]' : 'text-gray-500'
+                      }`}
+                    >
+                      {POLL_RESULT_PCTS[idx]}%
+                    </span>
+                  ) : null}
                 </button>
               )
             })}
           </div>
-          {poll !== null ? (
-            <p className="mt-3 text-xs text-gray-500">Response recorded (demo).</p>
+          {selectedOption !== null ? (
+            <p className="mt-3 text-xs text-gray-400">Response recorded.</p>
           ) : null}
         </Card>
       </StaggerPage>
