@@ -55,13 +55,13 @@ export function Community({ userXp, youDisplayName }: CommunityProps) {
             type="button"
             disabled={isJoined}
             onClick={() => setIsJoined(true)}
-            className={`mt-4 w-full rounded-lg py-3 text-sm font-semibold transition-opacity duration-200 ${
+            className={`mt-4 w-full rounded-lg py-3 text-sm font-semibold tracking-wide transition-opacity duration-200 ${
               isJoined
-                ? 'cursor-default bg-[#00FF88]/35 text-black/80'
+                ? 'cursor-default border border-[#00FF88]/25 bg-[#00FF88]/10 text-[#00FF88]/80'
                 : 'bg-[#00FF88] text-black hover:opacity-90 active:opacity-80'
             }`}
           >
-            {isJoined ? 'Challenge Accepted! ✅' : "I'm in"}
+            {isJoined ? 'JOINED' : "I'm in"}
           </button>
         </Card>
 
