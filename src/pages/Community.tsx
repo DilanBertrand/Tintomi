@@ -22,6 +22,7 @@ type CommunityProps = {
 
 export function Community({ userXp, youDisplayName }: CommunityProps) {
   const [poll, setPoll] = useState<number | null>(null)
+  const [isJoined, setIsJoined] = useState(false)
 
   const rows = useMemo((): LeaderRow[] => {
     const youRow: LeaderRow = { name: youDisplayName, xp: userXp, rank: 0, you: true }
@@ -52,9 +53,15 @@ export function Community({ userXp, youDisplayName }: CommunityProps) {
           </p>
           <button
             type="button"
-            className="mt-4 w-full rounded-lg bg-[#00FF88] py-3 text-sm font-semibold text-black transition-opacity duration-200 hover:opacity-90 active:opacity-80"
+            disabled={isJoined}
+            onClick={() => setIsJoined(true)}
+            className={`mt-4 w-full rounded-lg py-3 text-sm font-semibold transition-opacity duration-200 ${
+              isJoined
+                ? 'cursor-default bg-[#00FF88]/35 text-black/80'
+                : 'bg-[#00FF88] text-black hover:opacity-90 active:opacity-80'
+            }`}
           >
-            I&apos;m in
+            {isJoined ? 'Challenge Accepted! ✅' : "I'm in"}
           </button>
         </Card>
 
