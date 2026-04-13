@@ -103,9 +103,9 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
           </div>
         </Card>
 
-        <Card title="PORTFOLIO" subtitle="Sim | cash + holdings">
+        <Card title="PORTFOLIO" subtitle="Cash + holdings">
           <p className="font-mono text-3xl font-semibold text-[#00FF88]">${portfolioValue.toFixed(2)}</p>
-          <p className="mt-2 text-sm text-gray-500">Simulator only. Not financial advice.</p>
+          <p className="mt-2 text-sm text-gray-500">Not financial advice.</p>
         </Card>
 
         <Card title="STREAK" subtitle="Consecutive days active">

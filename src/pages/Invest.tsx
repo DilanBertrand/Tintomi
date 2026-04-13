@@ -115,11 +115,10 @@ export function Invest({ balance, portfolio, live, chartSeries, onBuy, onSell }:
   return (
     <StaggerPage className="space-y-6 pb-28">
       <motion.header variants={fadeSlideUp} className="px-1">
-        <p className="text-[11px] font-bold uppercase tracking-tighter text-[#7cb8ff] sm:text-xs">Simulated</p>
-        <h1 className="tm-premium-title mt-1 text-3xl font-black uppercase tracking-tighter sm:text-4xl">SIM TRADE</h1>
+        <h1 className="tm-premium-title text-3xl font-black uppercase tracking-tighter sm:text-4xl">PAPER TRADE</h1>
         <p className="mt-2 text-[1.1rem] text-neutral-300">
-          Portfolio up top. Watchlist below — neon line tracks your last {WATCHLIST_POINTS} ticks (sim + optional Finnhub
-          seed).
+          Portfolio up top. Watchlist below — neon line tracks your last {WATCHLIST_POINTS} ticks (local ticks + optional
+          Finnhub seed).
         </p>
       </motion.header>
 
@@ -159,7 +158,7 @@ export function Invest({ balance, portfolio, live, chartSeries, onBuy, onSell }:
 
       <Card title="Disclosure" subtitle="Not real markets" accent="neutral" glowRgb="160, 165, 175">
         <p className="text-sm leading-relaxed text-neutral-500">
-          Demo only. External market data is delayed and subject to vendor limits. Not advice.
+          External market data is delayed and subject to vendor limits. Not advice.
         </p>
       </Card>
     </StaggerPage>

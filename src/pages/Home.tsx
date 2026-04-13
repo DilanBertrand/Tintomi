@@ -244,7 +244,7 @@ export function Home({ onNavigate }: HomeProps) {
               </p>
               <p className="mt-3 text-[1.1rem] leading-relaxed text-neutral-200">
                 Apple raised prices. Here is the short version of what that means for your wallet—and why big brands can
-                move markets you will trade in the sim.
+                move markets you will trade in your practice portfolio.
               </p>
             </div>
           </div>
@@ -253,7 +253,7 @@ export function Home({ onNavigate }: HomeProps) {
             onClick={goInvestTab}
             className="relative mt-6 w-full rounded-2xl bg-[#00FF88] py-4 text-sm font-black uppercase tracking-tight text-black shadow-[0_0_32px_rgba(0,255,136,0.45),inset_0_1px_0_0_rgba(255,255,255,0.35)] transition hover:brightness-105 active:translate-y-px"
           >
-            Peek the Sim
+            Open trading
           </button>
         </div>
       </motion.section>

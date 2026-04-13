@@ -21,7 +21,7 @@ const POLL_OPTIONS = [
   'Trying to time the market',
 ] as const
 
-/** Simulated community vote distribution (shown after casting). */
+/** Vote distribution shown after the user casts. */
 const POLL_RESULT_PCTS: readonly [number, number, number] = [45, 30, 25]
 
 type CommunityProps = {
@@ -50,12 +50,12 @@ export function Community({ userXp, youDisplayName }: CommunityProps) {
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">NETWORK</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Community</h1>
         <p className="mt-1 max-w-md text-sm text-gray-500">
-          Leaderboard, weekly challenge, and poll (simulated).
+          Leaderboard, weekly challenge, and community poll.
         </p>
       </motion.header>
 
       <StaggerPage className="mt-8 space-y-6">
-        <Card title="CHALLENGE" subtitle="Weekly · simulated">
+        <Card title="CHALLENGE">
           <p className="text-sm font-semibold text-white">Save $20 this week.</p>
           <p className="mt-2 text-sm text-gray-500">
             Track one no-spend day. Build the habit without the noise.
@@ -74,7 +74,7 @@ export function Community({ userXp, youDisplayName }: CommunityProps) {
           </button>
         </Card>
 
-        <Card title="LEADERBOARD" subtitle="XP · simulated">
+        <Card title="LEADERBOARD">
           <div className="space-y-2">
             {rows.map((r) => (
               <div
@@ -137,9 +137,6 @@ export function Community({ userXp, youDisplayName }: CommunityProps) {
               )
             })}
           </div>
-          {selectedOption !== null ? (
-            <p className="mt-3 text-xs text-gray-400">Response recorded.</p>
-          ) : null}
         </Card>
       </StaggerPage>
     </div>

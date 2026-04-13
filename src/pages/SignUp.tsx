@@ -86,7 +86,7 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
         >
           <p className="tm-chrome-wordmark text-[10px] tracking-[0.28em] text-white/50">TINTOMI</p>
           <h1 className={`${head} mt-4 text-2xl font-black tracking-tight text-white`}>Sign up</h1>
-          <p className="mt-2 text-sm text-neutral-400">Create your account and jump into the sim.</p>
+          <p className="mt-2 text-sm text-neutral-400">Create your account and get started.</p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div>

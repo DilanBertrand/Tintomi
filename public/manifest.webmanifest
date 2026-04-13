@@ -1,7 +1,7 @@
 {
   "name": "Tintomi",
   "short_name": "Tintomi",
-  "description": "Teen wealth skills — learn, sim trade, and level up.",
+  "description": "Teen wealth skills — learn, practice trading, and level up.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#030712",

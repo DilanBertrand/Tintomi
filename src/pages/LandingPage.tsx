@@ -68,7 +68,7 @@ function GlowCard({
   )
 }
 
-function SimPreviewLine() {
+function LiveSparkPreview() {
   const [pts, setPts] = useState<number[]>(() => {
     let v = 100
     return Array.from({ length: 20 }, () => {
@@ -219,7 +219,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
               START GRINDING
               <ArrowRight className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" strokeWidth={2.5} aria-hidden />
             </motion.a>
-            <p className="relative z-10 mt-8 text-sm text-neutral-400">Simulator. Not financial advice.</p>
+            <p className="relative z-10 mt-8 text-sm text-neutral-400">Educational only. Not financial advice.</p>
           </motion.div>
         </section>
 
@@ -235,7 +235,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
                 before adulthood hits the gas.
               </p>
               <p className={`${body} mt-5 max-w-3xl text-pretty text-neutral-200`}>
-                Your first paycheck should not be your first lesson in money. Start here, grind in the sim, and walk into
+                Your first paycheck should not be your first lesson in money. Start here, build the reps, and walk into
                 the real world already fluent in how wealth is built (and protected).
               </p>
             </GlowCard>
@@ -306,14 +306,14 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
                   <div className="flex min-h-0 flex-1 flex-col gap-4">
                     <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
                       <Zap className={`${featureIconClass} text-[#00FF88]`} strokeWidth={featureIconStroke} aria-hidden />
-                      <h3 className={featureCardHeadline}>THE SIM</h3>
+                      <h3 className={featureCardHeadline}>PRACTICE FLOOR</h3>
                     </div>
                     <p className={`${body} min-h-0 flex-1 text-pretty text-neutral-100`}>
                       Real-time stock tracking with that neon line. Tap, zoom, buy and sell fake shares—feel the market
                       without funding it.
                     </p>
                     <div className="shrink-0">
-                      <SimPreviewLine />
+                      <LiveSparkPreview />
                     </div>
                   </div>
                 </GlowCard>
@@ -366,7 +366,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
                 <li className="flex gap-4">
                   <span className="mt-1 font-mono text-[#00FF88]">01</span>
                   <span>
-                    <strong className="text-white">No risk.</strong> Simulated cash and delayed market data—you learn the
+                    <strong className="text-white">No risk.</strong> Practice balances and delayed market data—you learn the
                     mechanics before your first real trade.
                   </span>
                 </li>
@@ -399,7 +399,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
             className="mx-auto max-w-2xl text-center"
           >
             <p className={`${head} text-[clamp(2rem,4vw,3rem)] font-black text-white`}>READY TO RUN IT UP?</p>
-            <p className={`${body} mx-auto mt-4 max-w-xl text-neutral-200`}>Jump in. The sim is live. Your squad is waiting.</p>
+            <p className={`${body} mx-auto mt-4 max-w-xl text-neutral-200`}>Jump in. The floor is open. Your squad is waiting.</p>
             <motion.a
               href="/signup"
               onClick={(e) => {

@@ -29,6 +29,23 @@ function isLevelUnlocked(levelIndex: number, done: Set<string>, userXp: number) 
 
 type QuizPhase = 'read' | 'quiz' | 'result'
 
+type ShuffledOption = { text: string; originalIndex: number }
+
+function shuffle<T>(items: T[]): T[] {
+  const arr = [...items]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+/** Randomizes option order while preserving which original index (0–3) is correct. */
+function shuffledOptionsForQuestion(q: { options: readonly string[] }): ShuffledOption[] {
+  const paired = q.options.map((text, originalIndex) => ({ text, originalIndex }))
+  return shuffle(paired)
+}
+
 const levelShell =
   'rounded-xl border border-white/10 bg-white/5 p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-white/15 hover:shadow-[0_0_28px_rgba(0,255,136,0.1)]'
 
@@ -42,6 +59,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
   const [phase, setPhase] = useState<QuizPhase>('read')
   const [qIndex, setQIndex] = useState(0)
   const [picked, setPicked] = useState<number | null>(null)
+  const [shuffleSeed, setShuffleSeed] = useState(0)
   const [correctCount, setCorrectCount] = useState(0)
   const scoreRef = useRef(0)
 
@@ -58,6 +76,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
   }
 
   const startQuiz = () => {
+    setShuffleSeed((n) => n + 1)
     setPhase('quiz')
     setQIndex(0)
     setPicked(null)
@@ -67,11 +86,18 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
 
   const currentQ = activeLesson?.questions[qIndex]
 
-  const onPickOption = (idx: number) => {
+  const shuffledOptions = useMemo(() => {
+    if (!currentQ) return []
+    return shuffledOptionsForQuestion(currentQ)
+  }, [currentQ?.id, shuffleSeed])
+
+  const onPickOption = (displayIndex: number) => {
     if (!activeLesson || !currentQ || picked !== null) return
-    setPicked(idx)
-    const ok = idx === currentQ.correctIndex
-    window.setTimeout(() => {
+    const row = shuffledOptions[displayIndex]
+    if (!row) return
+    setPicked(displayIndex)
+    const ok = row.originalIndex === currentQ.correctIndex
+    const advance = () => {
       if (ok) scoreRef.current += 1
       const next = scoreRef.current
       setCorrectCount(next)
@@ -81,13 +107,16 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
       }
       setQIndex((v) => v + 1)
       setPicked(null)
-    }, 520)
+    }
+    const delayMs = ok ? 650 : 1500
+    window.setTimeout(advance, delayMs)
   }
 
   const finishLesson = () => {
     if (!activeLesson) return
     const finalScore = scoreRef.current
     if (finalScore < 3) {
+      setShuffleSeed((n) => n + 1)
       setPhase('quiz')
       setQIndex(0)
       setPicked(null)
@@ -296,27 +325,36 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                   </div>
                   <h3 className="mt-3 text-base font-semibold text-white sm:text-lg">{currentQ.question}</h3>
                   <div className="mt-4 space-y-2">
-                    {currentQ.options.map((opt, idx) => {
+                    {shuffledOptions.map((opt, idx) => {
                       const show = picked !== null
-                      const isCorrect = idx === currentQ.correctIndex
+                      const isThisCorrect = opt.originalIndex === currentQ.correctIndex
                       const isPicked = picked === idx
-                      const tone = show
-                        ? isCorrect
-                          ? 'border-[#00FF88] bg-[#00FF88]/10 text-white'
-                          : isPicked
-                            ? 'border-red-400 bg-red-400/10 text-white'
-                            : 'border-white/5 bg-white/5 text-gray-400'
-                        : 'border-white/10 bg-white/5 text-gray-200 hover:bg-white/[0.09]'
+                      const userMissed = show && isPicked && !isThisCorrect
+
+                      const tone = !show
+                        ? 'border-white/10 bg-white/5 text-gray-200 hover:bg-white/[0.09]'
+                        : isThisCorrect
+                          ? 'border-[#00FF88]/80 bg-[#00FF88]/12 text-white ring-1 ring-[#00FF88]/25'
+                          : userMissed
+                            ? 'border-red-500/50 bg-red-500/15 text-red-50'
+                            : 'border-white/5 bg-white/[0.03] text-gray-500'
+
                       return (
-                        <button
-                          key={opt}
+                        <motion.button
+                          key={`${currentQ.id}-${idx}-${opt.originalIndex}`}
                           type="button"
                           disabled={show}
                           onClick={() => onPickOption(idx)}
+                          animate={
+                            userMissed
+                              ? { x: [0, -6, 6, -5, 5, -3, 3, 0] }
+                              : { x: 0 }
+                          }
+                          transition={{ duration: 0.42, ease: 'easeInOut' }}
                           className={`w-full rounded-lg border px-3 py-3 text-left text-sm font-medium transition-colors duration-200 ${tone}`}
                         >
-                          {opt}
-                        </button>
+                          {opt.text}
+                        </motion.button>
                       )
                     })}
                   </div>
