@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion'
 import { ArrowLeft, Loader2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { MeshBackdrop } from '../components/MeshBackdrop'
 import { profileExistsForEmail } from '../lib/profiles'
+import { supabase } from '../lib/supabase'
 
 const head = "font-['Space_Grotesk',system-ui,sans-serif] font-bold uppercase tracking-tight"
 
@@ -34,6 +35,25 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [resendSending, setResendSending] = useState(false)
+  const [resendEmail, setResendEmail] = useState('')
+  const [canResend, setCanResend] = useState(false)
+  const [timer, setTimer] = useState(30)
+
+  useEffect(() => {
+    if (!info || canResend) return
+    const id = window.setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(id)
+          setCanResend(true)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [info, canResend])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -59,10 +79,31 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
       return
     }
     if (result.needsEmailConfirmation) {
+      const trimmedEmail = email.trim()
       setInfo('Check your inbox to confirm your email, then log in.')
+      setResendEmail(trimmedEmail)
+      setCanResend(false)
+      setTimer(30)
       return
     }
     window.history.replaceState(null, '', '/home')
+  }
+
+  async function handleResendEmail() {
+    if (!canResend || !resendEmail) return
+    setError(null)
+    setResendSending(true)
+    const { error: resendErr } = await supabase.auth.resend({
+      type: 'signup',
+      email: resendEmail,
+    })
+    setResendSending(false)
+    if (resendErr) {
+      setError(resendErr.message || 'Could not resend verification email.')
+      return
+    }
+    setCanResend(false)
+    setTimer(30)
   }
 
   return (
@@ -130,9 +171,19 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
               </p>
             ) : null}
             {info ? (
-              <p className="text-center text-sm font-semibold text-[#00FF88] drop-shadow-[0_0_12px_rgba(0,255,136,0.5)]" role="status">
-                {info}
-              </p>
+              <div className="space-y-3">
+                <p className="text-center text-sm font-semibold text-[#00FF88] drop-shadow-[0_0_12px_rgba(0,255,136,0.5)]" role="status">
+                  {info}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResendEmail}
+                  disabled={!canResend || resendSending}
+                  className="mx-auto block rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold tracking-wide text-neutral-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {resendSending ? 'Sending...' : canResend ? 'Resend Email' : `Resend in ${timer}s`}
+                </button>
+              </div>
             ) : null}
 
             <button
