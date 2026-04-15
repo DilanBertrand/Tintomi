@@ -6,6 +6,13 @@ import { localProgressKeys } from '../lib/localProgress'
 import { supabase } from '../lib/supabase'
 
 type LeaderRow = { name: string; xp: number; rank: number; you?: boolean }
+type DbProfileRow = {
+  id: string
+  username: string | null
+  full_name: string | null
+  xp: number | string | null
+  created_at: string | null
+}
 
 const HYBRID_TOP_THREE: LeaderRow[] = [
   { name: 'zara_finance', xp: 9900, rank: 1 },
@@ -34,7 +41,9 @@ type CommunityProps = {
 export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isJoined, setIsJoined] = useState(false)
-  const [liveRows, setLiveRows] = useState<LeaderRow[]>([])
+  const [realRows, setRealRows] = useState<LeaderRow[]>([])
+  const [myLiveRank, setMyLiveRank] = useState<number | null>(null)
+  const [myLiveRow, setMyLiveRow] = useState<LeaderRow | null>(null)
 
   useEffect(() => {
     if (!userId) return
@@ -82,17 +91,21 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
     async function loadLeaderboard() {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, full_name, xp')
+        .select('id, username, full_name, xp, created_at')
         .order('xp', { ascending: false })
-        .limit(100)
+        .order('created_at', { ascending: true })
 
       if (error || !data || cancelled) {
-        if (!cancelled) setLiveRows([])
+        if (!cancelled) {
+          setRealRows([])
+          setMyLiveRank(null)
+          setMyLiveRow(null)
+        }
         return
       }
 
       const topThreeNames = new Set(HYBRID_TOP_THREE.map((row) => row.name.toLowerCase()))
-      const mapped = data
+      const parsed = (data as DbProfileRow[])
         .map((row) => {
           const username = typeof row.username === 'string' ? row.username.trim() : ''
           const fullName = typeof row.full_name === 'string' ? row.full_name.trim() : ''
@@ -104,33 +117,78 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
                 ? Number.parseInt(row.xp, 10)
                 : 0
 
+          const createdAt =
+            typeof row.created_at === 'string' && row.created_at.trim().length > 0
+              ? row.created_at
+              : '9999-12-31T23:59:59.999Z'
+
           return {
+            id: row.id,
             name: resolvedName,
             xp: Number.isFinite(xpValue) ? Math.max(0, xpValue) : 0,
+            createdAt,
           }
         })
         .filter((row) => row.name && !topThreeNames.has(row.name.toLowerCase()))
-        .sort((a, b) => b.xp - a.xp)
-        .map((row, index) => ({ ...row, rank: index + 4 }))
+        .sort((a, b) => {
+          if (b.xp !== a.xp) return b.xp - a.xp
+          if (a.createdAt < b.createdAt) return -1
+          if (a.createdAt > b.createdAt) return 1
+          return a.id.localeCompare(b.id)
+        })
 
-      if (!cancelled) setLiveRows(mapped)
+      const ranked = parsed.map((row, index) => ({ name: row.name, xp: row.xp, rank: index + 4 }))
+      const myIndex = parsed.findIndex((row) => row.id === userId)
+      const myParsedRow = myIndex >= 0 ? parsed[myIndex] : null
+
+      if (!cancelled) {
+        setRealRows(ranked)
+        setMyLiveRank(myIndex >= 0 ? myIndex + 4 : null)
+        setMyLiveRow(
+          myParsedRow
+            ? {
+                name: myParsedRow.name,
+                xp: myParsedRow.xp,
+                rank: myIndex + 4,
+                you: true,
+              }
+            : null,
+        )
+      }
     }
 
     loadLeaderboard()
+    const channel = supabase
+      .channel('community-leaderboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        void loadLeaderboard()
+      })
+      .subscribe()
+
     return () => {
       cancelled = true
+      void supabase.removeChannel(channel)
     }
-  }, [])
+  }, [userId])
 
-  const rows = useMemo((): LeaderRow[] => {
-    const topThreeNames = new Set(HYBRID_TOP_THREE.map((row) => row.name.toLowerCase()))
-    const youRow: LeaderRow = { name: youDisplayName, xp: userXp, rank: 0, you: true }
-    const includeYouInTail = !topThreeNames.has(youDisplayName.toLowerCase())
-    const liveWithoutYou = liveRows.filter((row) => row.name.toLowerCase() !== youDisplayName.toLowerCase())
-    const tail: LeaderRow[] = includeYouInTail ? [...liveWithoutYou, youRow] : liveWithoutYou
-    const rankedTail = tail.sort((a, b) => b.xp - a.xp).map((r, i) => ({ ...r, rank: i + 4 }))
-    return [...HYBRID_TOP_THREE, ...rankedTail]
-  }, [liveRows, userXp, youDisplayName])
+  const topFiveRows = useMemo((): LeaderRow[] => {
+    const firstTwoReal = realRows.slice(0, 2)
+    return [...HYBRID_TOP_THREE, ...firstTwoReal].map((row) => ({
+      ...row,
+      you: myLiveRank !== null && row.rank === myLiveRank,
+    }))
+  }, [realRows, myLiveRank])
+
+  const showStickyMe = useMemo(() => {
+    if (myLiveRank === null) return false
+    return myLiveRank > 5
+  }, [myLiveRank])
+
+  const stickyMeRow = useMemo((): LeaderRow | null => {
+    if (!showStickyMe || myLiveRank === null) return null
+    if (myLiveRow) return myLiveRow
+    return { name: youDisplayName, xp: userXp, rank: myLiveRank, you: true }
+  }, [showStickyMe, myLiveRank, myLiveRow, youDisplayName, userXp])
 
   return (
     <div className="pb-28">
@@ -169,11 +227,11 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
 
         <Card title="LEADERBOARD">
           <div className="space-y-2">
-            {rows.map((r) => (
+            {topFiveRows.map((r) => (
               <div
-                key={r.you ? 'you' : r.name}
+                key={`${r.rank}-${r.name}`}
                 className={`${rowGlass} ${
-                  r.you ? 'border-[#00FF88]/25 bg-[#00FF88]/[0.07]' : ''
+                  r.you ? 'border-yellow-400/45 bg-yellow-500/10' : ''
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -188,6 +246,24 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
                 <span className="font-mono text-sm font-semibold text-[#00FF88]">{r.xp} XP</span>
               </div>
             ))}
+
+            {showStickyMe ? (
+              <>
+                <div className="px-2 py-1 text-center text-xs font-semibold tracking-[0.22em] text-gray-600">...</div>
+                {stickyMeRow ? (
+                  <div className={`${rowGlass} border-yellow-400/45 bg-yellow-500/10`}>
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 text-center text-sm font-semibold text-yellow-200">#{stickyMeRow.rank}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-white">{stickyMeRow.name} (you)</p>
+                        <p className="text-xs text-yellow-200/80">XP</p>
+                      </div>
+                    </div>
+                    <span className="font-mono text-sm font-semibold text-[#00FF88]">{stickyMeRow.xp} XP</span>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
           </div>
         </Card>
 

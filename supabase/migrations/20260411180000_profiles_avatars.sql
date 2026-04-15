@@ -5,6 +5,7 @@ create table if not exists public.profiles (
   full_name text,
   username text unique,
   xp integer not null default 0,
+  created_at timestamptz not null default now(),
   avatar_url text,
   login_streak integer not null default 1,
   last_streak_date date,
