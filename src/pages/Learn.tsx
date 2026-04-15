@@ -6,6 +6,7 @@ import { ProgressBar } from '../components/ProgressBar'
 import { StaggerPage } from '../components/StaggerPage'
 import { levels, XP_PER_LESSON, type Lesson } from '../data/lessons'
 import { themeForLevel } from '../learn-themes'
+import { updateUserXP } from '../lib/updateUserXP'
 import { fadeSlideUp } from '../motion/variants'
 
 /** Total XP and completed lesson IDs persist in the browser via `App` and `lib/localProgress.ts`. */
@@ -99,6 +100,9 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
     if (!row) return
     setPicked(displayIndex)
     const ok = row.originalIndex === currentQ.correctIndex
+    if (ok) {
+      void updateUserXP(10)
+    }
     const advance = () => {
       if (ok) scoreRef.current += 1
       const next = scoreRef.current
@@ -127,6 +131,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
       return
     }
     if (!done.has(activeLesson.id)) {
+      await updateUserXP(10)
       await onAddXp(XP_PER_LESSON)
       onCompleteLesson(activeLesson.id)
     }

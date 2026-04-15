@@ -4,6 +4,7 @@ import { Card } from '../components/Card'
 import { StaggerPage } from '../components/StaggerPage'
 import { localProgressKeys } from '../lib/localProgress'
 import { supabase } from '../lib/supabase'
+import { updateUserXP } from '../lib/updateUserXP'
 
 type LeaderRow = { name: string; xp: number; rank: number; you?: boolean }
 type DbProfileRow = {
@@ -231,7 +232,11 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
           <button
             type="button"
             disabled={isJoined}
-            onClick={() => setIsJoined(true)}
+            onClick={async () => {
+              if (isJoined) return
+              setIsJoined(true)
+              await updateUserXP(20)
+            }}
             className={`mt-4 w-full rounded-lg py-3 text-sm font-semibold tracking-wide transition-opacity duration-200 ${
               isJoined
                 ? 'cursor-default border border-[#00FF88]/25 bg-[#00FF88]/10 text-[#00FF88]/80'
