@@ -2,9 +2,12 @@ import { motion } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { Card } from '../components/Card'
 import { StaggerPage } from '../components/StaggerPage'
+import { useAuth } from '../contexts/AuthContext'
 import { localProgressKeys } from '../lib/localProgress'
+import { updateProfileFields } from '../lib/profiles'
 import { supabase } from '../lib/supabase'
 import { updateUserXP } from '../lib/updateUserXP'
+import { isUsernameRestricted } from '../utils/profanityFilter'
 
 type LeaderRow = { name: string; xp: number; rank: number; you?: boolean }
 type DbProfileRow = {
@@ -41,11 +44,52 @@ type CommunityProps = {
 }
 
 export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
+  const { user, profile, refreshProfile } = useAuth()
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isJoined, setIsJoined] = useState(false)
   const [realRows, setRealRows] = useState<LeaderRow[]>([])
   const [myLiveRank, setMyLiveRank] = useState<number | null>(null)
   const [myLiveRow, setMyLiveRow] = useState<LeaderRow | null>(null)
+  const [profileLocked, setProfileLocked] = useState(true)
+  const [lockLoading, setLockLoading] = useState(true)
+  const [unlockSaving, setUnlockSaving] = useState(false)
+  const [unlockError, setUnlockError] = useState<string | null>(null)
+  const [displayNameInput, setDisplayNameInput] = useState(profile?.full_name ?? '')
+  const [usernameInput, setUsernameInput] = useState(profile?.username ?? '')
+
+  useEffect(() => {
+    setDisplayNameInput(profile?.full_name ?? '')
+    setUsernameInput(profile?.username ?? '')
+  }, [profile?.full_name, profile?.username])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadLockState() {
+      setLockLoading(true)
+      const { data, error } = await supabase.from('profiles').select('username').eq('id', userId).maybeSingle()
+      if (cancelled) return
+      if (error) {
+        setProfileLocked(true)
+        setLockLoading(false)
+        return
+      }
+      const uname = typeof data?.username === 'string' ? data.username.trim() : ''
+      setProfileLocked(!uname)
+      setLockLoading(false)
+    }
+
+    if (!userId) {
+      setProfileLocked(true)
+      setLockLoading(false)
+      return
+    }
+
+    void loadLockState()
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
 
   useEffect(() => {
     if (!userId) return
@@ -208,6 +252,37 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
     return { name: youDisplayName, xp: userXp, rank: myLiveRank, you: true }
   }, [showStickyMe, myLiveRank, myLiveRow, youDisplayName, userXp])
 
+  async function handleUnlockProfile() {
+    if (!user) return
+    setUnlockError(null)
+
+    const nameTrim = displayNameInput.trim()
+    const userTrim = usernameInput.trim()
+    if (!nameTrim || !userTrim) {
+      setUnlockError('Display name and username are required.')
+      return
+    }
+    if (isUsernameRestricted(nameTrim) || isUsernameRestricted(userTrim)) {
+      setUnlockError('Username contains restricted language or symbols.')
+      return
+    }
+
+    setUnlockSaving(true)
+    const { error } = await updateProfileFields(user.id, {
+      full_name: nameTrim,
+      username: userTrim,
+    })
+    if (error) {
+      setUnlockSaving(false)
+      setUnlockError(error)
+      return
+    }
+
+    await refreshProfile()
+    setProfileLocked(false)
+    setUnlockSaving(false)
+  }
+
   return (
     <div className="pb-28">
       <motion.header
@@ -247,47 +322,83 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
           </button>
         </Card>
 
-        <Card title="LEADERBOARD">
-          <div className="space-y-2">
-            {topFiveRows.map((r) => (
-              <div
-                key={`${r.rank}-${r.name}`}
-                className={`${rowGlass} ${
-                  r.you ? 'border-yellow-400/45 bg-yellow-500/10' : ''
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 text-center text-sm font-semibold text-gray-500">#{r.rank}</span>
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      {r.name} {r.you ? '(you)' : ''}
-                    </p>
-                    <p className="text-xs text-gray-500">XP</p>
-                  </div>
-                </div>
-                <span className="font-mono text-sm font-semibold text-[#00FF88]">{r.xp} XP</span>
+        {profileLocked && !lockLoading ? (
+          <Card title="LEADERBOARD">
+            <div className="mx-auto max-w-md rounded-2xl border border-white/15 bg-white/10 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16),0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+              <p className="text-center text-lg font-semibold text-white">Access the Leaderboard</p>
+              <p className="mt-2 text-center text-sm text-gray-300">
+                Choose a username and display name to see your rank and join the grind.
+              </p>
+              <div className="mt-4 space-y-3">
+                <input
+                  type="text"
+                  value={displayNameInput}
+                  onChange={(e) => setDisplayNameInput(e.target.value.replace(/\s/g, ''))}
+                  placeholder="Display Name"
+                  className="w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-[#00FF88]/45 focus:ring-2 focus:ring-[#00FF88]/20"
+                />
+                <input
+                  type="text"
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value.replace(/\s/g, ''))}
+                  placeholder="Username"
+                  className="w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-[#00FF88]/45 focus:ring-2 focus:ring-[#00FF88]/20"
+                />
+                {unlockError ? <p className="text-center text-xs font-medium text-red-400">{unlockError}</p> : null}
+                <button
+                  type="button"
+                  onClick={handleUnlockProfile}
+                  disabled={unlockSaving}
+                  className="w-full rounded-xl bg-[#00FF88] py-3 text-sm font-bold text-black transition hover:brightness-105 disabled:opacity-50"
+                >
+                  {unlockSaving ? 'Saving...' : 'Save'}
+                </button>
               </div>
-            ))}
-
-            {showStickyMe ? (
-              <>
-                <div className="px-2 py-1 text-center text-xs font-semibold tracking-[0.22em] text-gray-600">...</div>
-                {stickyMeRow ? (
-                  <div className={`${rowGlass} border-yellow-400/45 bg-yellow-500/10`}>
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 text-center text-sm font-semibold text-yellow-200">#{stickyMeRow.rank}</span>
-                      <div>
-                        <p className="text-sm font-semibold text-white">{stickyMeRow.name} (you)</p>
-                        <p className="text-xs text-yellow-200/80">XP</p>
-                      </div>
+            </div>
+          </Card>
+        ) : (
+          <Card title="LEADERBOARD">
+            <div className="space-y-2">
+              {topFiveRows.map((r) => (
+                <div
+                  key={`${r.rank}-${r.name}`}
+                  className={`${rowGlass} ${
+                    r.you ? 'border-yellow-400/45 bg-yellow-500/10' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 text-center text-sm font-semibold text-gray-500">#{r.rank}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        {r.name} {r.you ? '(you)' : ''}
+                      </p>
+                      <p className="text-xs text-gray-500">XP</p>
                     </div>
-                    <span className="font-mono text-sm font-semibold text-[#00FF88]">{stickyMeRow.xp} XP</span>
                   </div>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        </Card>
+                  <span className="font-mono text-sm font-semibold text-[#00FF88]">{r.xp} XP</span>
+                </div>
+              ))}
+
+              {showStickyMe ? (
+                <>
+                  <div className="px-2 py-1 text-center text-xs font-semibold tracking-[0.22em] text-gray-600">...</div>
+                  {stickyMeRow ? (
+                    <div className={`${rowGlass} border-yellow-400/45 bg-yellow-500/10`}>
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 text-center text-sm font-semibold text-yellow-200">#{stickyMeRow.rank}</span>
+                        <div>
+                          <p className="text-sm font-semibold text-white">{stickyMeRow.name} (you)</p>
+                          <p className="text-xs text-yellow-200/80">XP</p>
+                        </div>
+                      </div>
+                      <span className="font-mono text-sm font-semibold text-[#00FF88]">{stickyMeRow.xp} XP</span>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          </Card>
+        )}
 
         <Card title="POLL" subtitle="Signal check">
           <p className="text-sm font-semibold text-white">
