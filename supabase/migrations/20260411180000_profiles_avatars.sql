@@ -4,6 +4,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   full_name text,
   username text unique,
+  xp integer not null default 0,
   avatar_url text,
   login_streak integer not null default 1,
   last_streak_date date,
@@ -32,6 +33,11 @@ drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
   on public.profiles for select
   using (auth.uid() = id);
+
+drop policy if exists "profiles_select_authenticated" on public.profiles;
+create policy "profiles_select_authenticated"
+  on public.profiles for select
+  using (auth.role() = 'authenticated');
 
 drop policy if exists "profiles_insert_own" on public.profiles;
 create policy "profiles_insert_own"

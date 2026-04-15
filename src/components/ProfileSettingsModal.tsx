@@ -3,6 +3,7 @@ import { Loader2, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { updateProfileFields } from '../lib/profiles'
+import { isUsernameRestricted } from '../utils/profanityFilter'
 
 type ProfileSettingsModalProps = {
   initialFullName: string
@@ -29,6 +30,12 @@ export function ProfileSettingsModal({ initialFullName, initialUsername, onClose
     const uid = sessionUser.id
     const nameTrim = fullName.trim() || null
     const userTrim = username.trim() || null
+
+    if (userTrim && isUsernameRestricted(userTrim)) {
+      setSaving(false)
+      setError('Username contains restricted language or symbols.')
+      return
+    }
 
     const { error: upErr } = await updateProfileFields(uid, {
       full_name: nameTrim,

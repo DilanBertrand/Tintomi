@@ -42,6 +42,7 @@ function mapProfile(row: Record<string, unknown>): ProfileRow {
     id: String(row.id),
     full_name: (row.full_name as string) ?? null,
     username: (row.username as string) ?? null,
+    xp: typeof row.xp === 'number' ? row.xp : Number(row.xp) || 0,
     avatar_url: (row.avatar_url as string) ?? null,
     login_streak: typeof row.login_streak === 'number' ? row.login_streak : Number(row.login_streak) || 1,
     last_streak_date: (row.last_streak_date as string) ?? null,

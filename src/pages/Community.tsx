@@ -3,14 +3,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card } from '../components/Card'
 import { StaggerPage } from '../components/StaggerPage'
 import { localProgressKeys } from '../lib/localProgress'
+import { supabase } from '../lib/supabase'
 
 type LeaderRow = { name: string; xp: number; rank: number; you?: boolean }
 
-const leaderboardOthers: LeaderRow[] = [
-  { name: 'zara_finance', xp: 1840, rank: 1 },
-  { name: 'ethan_trades', xp: 1622, rank: 2 },
-  { name: 'nia_macro', xp: 1490, rank: 3 },
-  { name: 'omar_index', xp: 1324, rank: 4 },
+const HYBRID_TOP_THREE: LeaderRow[] = [
+  { name: 'zara_finance', xp: 9900, rank: 1 },
+  { name: 'ethan_trades', xp: 9500, rank: 2 },
+  { name: 'nia_macro', xp: 9200, rank: 3 },
 ]
 
 const rowGlass =
@@ -34,6 +34,7 @@ type CommunityProps = {
 export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isJoined, setIsJoined] = useState(false)
+  const [liveRows, setLiveRows] = useState<LeaderRow[]>([])
 
   useEffect(() => {
     if (!userId) return
@@ -75,11 +76,61 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
     }
   }, [userId, isJoined])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadLeaderboard() {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, xp')
+        .order('xp', { ascending: false })
+        .limit(100)
+
+      if (error || !data || cancelled) {
+        if (!cancelled) setLiveRows([])
+        return
+      }
+
+      const topThreeNames = new Set(HYBRID_TOP_THREE.map((row) => row.name.toLowerCase()))
+      const mapped = data
+        .map((row) => {
+          const username = typeof row.username === 'string' ? row.username.trim() : ''
+          const fullName = typeof row.full_name === 'string' ? row.full_name.trim() : ''
+          const resolvedName = username || fullName || 'anonymous_trader'
+          const xpValue =
+            typeof row.xp === 'number'
+              ? row.xp
+              : typeof row.xp === 'string'
+                ? Number.parseInt(row.xp, 10)
+                : 0
+
+          return {
+            name: resolvedName,
+            xp: Number.isFinite(xpValue) ? Math.max(0, xpValue) : 0,
+          }
+        })
+        .filter((row) => row.name && !topThreeNames.has(row.name.toLowerCase()))
+        .sort((a, b) => b.xp - a.xp)
+        .map((row, index) => ({ ...row, rank: index + 4 }))
+
+      if (!cancelled) setLiveRows(mapped)
+    }
+
+    loadLeaderboard()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const rows = useMemo((): LeaderRow[] => {
+    const topThreeNames = new Set(HYBRID_TOP_THREE.map((row) => row.name.toLowerCase()))
     const youRow: LeaderRow = { name: youDisplayName, xp: userXp, rank: 0, you: true }
-    const copy: LeaderRow[] = [...leaderboardOthers, youRow]
-    return copy.sort((a, b) => b.xp - a.xp).map((r, i) => ({ ...r, rank: i + 1 }))
-  }, [userXp, youDisplayName])
+    const includeYouInTail = !topThreeNames.has(youDisplayName.toLowerCase())
+    const liveWithoutYou = liveRows.filter((row) => row.name.toLowerCase() !== youDisplayName.toLowerCase())
+    const tail: LeaderRow[] = includeYouInTail ? [...liveWithoutYou, youRow] : liveWithoutYou
+    const rankedTail = tail.sort((a, b) => b.xp - a.xp).map((r, i) => ({ ...r, rank: i + 4 }))
+    return [...HYBRID_TOP_THREE, ...rankedTail]
+  }, [liveRows, userXp, youDisplayName])
 
   return (
     <div className="pb-28">
