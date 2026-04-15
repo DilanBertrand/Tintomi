@@ -147,6 +147,15 @@ export async function updateProfileFields(
   userId: string,
   payload: ProfileUpdatePayload,
 ): Promise<{ error: string | null; row: ProfileRow | null }> {
+  const { data: existingProfile } = await supabase.from('profiles').select('xp').eq('id', userId).maybeSingle()
+  const existingXpRaw = (existingProfile as { xp?: unknown } | null)?.xp
+  const existingXp =
+    typeof existingXpRaw === 'number'
+      ? existingXpRaw
+      : typeof existingXpRaw === 'string'
+        ? Number(existingXpRaw)
+        : null
+
   const { data, error } = await supabase
     .from('profiles')
     .upsert(
@@ -154,6 +163,7 @@ export async function updateProfileFields(
         id: userId,
         full_name: payload.full_name,
         username: payload.username || null,
+        xp: Number.isFinite(existingXp) && existingXp !== null ? existingXp : 0,
       },
       { onConflict: 'id' },
     )
@@ -167,6 +177,41 @@ export async function updateProfileFields(
     return { error: error.message, row: null }
   }
   return { error: null, row: mapProfile(data as Record<string, unknown>) }
+}
+
+export async function incrementProfileXp(userId: string, amount: number): Promise<{ error: string | null }> {
+  const safeAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0
+  if (safeAmount <= 0) return { error: null }
+
+  const { data, error: fetchError } = await supabase.from('profiles').select('xp').eq('id', userId).maybeSingle()
+  if (fetchError) {
+    if (isMissingProfilesTableError(fetchError)) return { error: PROFILES_TABLE_SETUP_HINT }
+    return { error: fetchError.message }
+  }
+
+  const currentXpRaw = (data as { xp?: unknown } | null)?.xp
+  const currentXp =
+    typeof currentXpRaw === 'number'
+      ? currentXpRaw
+      : typeof currentXpRaw === 'string'
+        ? Number(currentXpRaw)
+        : 0
+  const nextXp = Math.max(0, (Number.isFinite(currentXp) ? currentXp : 0) + safeAmount)
+
+  const { error: upsertError } = await supabase.from('profiles').upsert(
+    {
+      id: userId,
+      xp: nextXp,
+    },
+    { onConflict: 'id' },
+  )
+
+  if (upsertError) {
+    if (isMissingProfilesTableError(upsertError)) return { error: PROFILES_TABLE_SETUP_HINT }
+    return { error: upsertError.message }
+  }
+
+  return { error: null }
 }
 
 export async function setProfileAvatarUrl(userId: string, avatarUrl: string | null) {

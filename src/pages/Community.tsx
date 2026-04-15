@@ -12,6 +12,7 @@ type DbProfileRow = {
   full_name: string | null
   xp: number | string | null
   created_at: string | null
+  updated_at?: string | null
 }
 
 const HYBRID_TOP_THREE: LeaderRow[] = [
@@ -89,11 +90,25 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
     let cancelled = false
 
     async function loadLeaderboard() {
-      const { data, error } = await supabase
+      const primary = await supabase
         .from('profiles')
         .select('id, username, full_name, xp, created_at')
         .order('xp', { ascending: false })
         .order('created_at', { ascending: true })
+
+      let data: DbProfileRow[] | null = primary.data as DbProfileRow[] | null
+      let error = primary.error
+
+      // Backward-compatible fallback for databases that don't yet have `created_at`.
+      if (error) {
+        const fallback = await supabase
+          .from('profiles')
+          .select('id, username, full_name, xp, updated_at')
+          .order('xp', { ascending: false })
+          .order('updated_at', { ascending: true })
+        data = fallback.data as DbProfileRow[] | null
+        error = fallback.error
+      }
 
       if (error || !data || cancelled) {
         if (!cancelled) {
@@ -120,7 +135,9 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
           const createdAt =
             typeof row.created_at === 'string' && row.created_at.trim().length > 0
               ? row.created_at
-              : '9999-12-31T23:59:59.999Z'
+              : typeof row.updated_at === 'string' && row.updated_at.trim().length > 0
+                ? row.updated_at
+                : '9999-12-31T23:59:59.999Z'
 
           return {
             id: row.id,

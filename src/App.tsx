@@ -16,6 +16,7 @@ import { SignUp } from './pages/SignUp'
 import { fetchCandleCloses } from './lib/finnhub'
 import { localProgressKeys } from './lib/localProgress'
 import { getDisplayName, truncateForNav } from './lib/displayName'
+import { incrementProfileXp } from './lib/profiles'
 import { pathToTab, tabToPath } from './lib/routes'
 
 function initLive(): LivePrices {
@@ -253,7 +254,17 @@ export default function App() {
     return sum
   }, [balance, portfolio, livePrices])
 
-  const addXp = (n: number) => setXp((v) => v + n)
+  const addXp = useCallback(
+    async (n: number) => {
+      setXp((v) => v + n)
+      if (!user?.id) return
+      const { error } = await incrementProfileXp(user.id, n)
+      if (error) {
+        console.warn('[learn] failed to sync XP to Supabase:', error)
+      }
+    },
+    [user?.id],
+  )
 
   const completeLesson = (lessonId: string) => {
     setCompletedLessonIds((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]))

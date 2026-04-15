@@ -12,7 +12,7 @@ import { fadeSlideUp } from '../motion/variants'
 
 type LearnProps = {
   xp: number
-  onAddXp: (amount: number) => void
+  onAddXp: (amount: number) => Promise<void> | void
   completedLessonIds: string[]
   onCompleteLesson: (lessonId: string) => void
 }
@@ -114,7 +114,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
     window.setTimeout(advance, delayMs)
   }
 
-  const finishLesson = () => {
+  const finishLesson = async () => {
     if (!activeLesson) return
     const finalScore = scoreRef.current
     if (finalScore < 3) {
@@ -127,7 +127,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
       return
     }
     if (!done.has(activeLesson.id)) {
-      onAddXp(XP_PER_LESSON)
+      await onAddXp(XP_PER_LESSON)
       onCompleteLesson(activeLesson.id)
     }
     closeLesson()
