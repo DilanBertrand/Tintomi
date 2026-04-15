@@ -18,6 +18,7 @@ type DbProfileRow = {
   created_at: string | null
   updated_at?: string | null
 }
+type RankedProfileRow = { id: string; name: string; xp: number; rank: number }
 
 const HYBRID_TOP_THREE: LeaderRow[] = [
   { name: 'zara_finance', xp: 9900, rank: 1 },
@@ -47,7 +48,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
   const { user, profile, refreshProfile } = useAuth()
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isJoined, setIsJoined] = useState(false)
-  const [realRows, setRealRows] = useState<LeaderRow[]>([])
+  const [realRows, setRealRows] = useState<RankedProfileRow[]>([])
   const [myLiveRank, setMyLiveRank] = useState<number | null>(null)
   const [myLiveRow, setMyLiveRow] = useState<LeaderRow | null>(null)
   const [profileLocked, setProfileLocked] = useState(true)
@@ -140,6 +141,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
         .select('id, username, full_name, xp, created_at')
         .order('xp', { ascending: false })
         .order('created_at', { ascending: true })
+        .limit(50)
 
       let data: DbProfileRow[] | null = primary.data as DbProfileRow[] | null
       let error = primary.error
@@ -151,6 +153,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
           .select('id, username, full_name, xp, updated_at')
           .order('xp', { ascending: false })
           .order('updated_at', { ascending: true })
+          .limit(50)
         data = fallback.data as DbProfileRow[] | null
         error = fallback.error
       }
@@ -199,9 +202,15 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
           return a.id.localeCompare(b.id)
         })
 
-      const ranked = parsed.map((row, index) => ({ name: row.name, xp: row.xp, rank: index + 4 }))
-      const myIndex = parsed.findIndex((row) => row.id === userId)
-      const myParsedRow = myIndex >= 0 ? parsed[myIndex] : null
+      // Rank is derived from list order (index + 4 because #1-#3 are fixed bots).
+      const ranked: RankedProfileRow[] = parsed.map((row, index) => ({
+        id: row.id,
+        name: row.name,
+        xp: row.xp,
+        rank: index + 4,
+      }))
+      const myIndex = ranked.findIndex((row) => row.id === userId)
+      const myParsedRow = myIndex >= 0 ? ranked[myIndex] : null
 
       if (!cancelled) {
         setRealRows(ranked)
@@ -211,7 +220,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
             ? {
                 name: myParsedRow.name,
                 xp: myParsedRow.xp,
-                rank: myIndex + 4,
+                rank: myParsedRow.rank,
                 you: true,
               }
             : null,
@@ -234,7 +243,12 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
   }, [userId])
 
   const topFiveRows = useMemo((): LeaderRow[] => {
-    const firstTwoReal = realRows.slice(0, 2)
+    // Top 5 = 3 fixed bots + top 2 real users from global ranking.
+    const firstTwoReal: LeaderRow[] = realRows.slice(0, 2).map((row) => ({
+      name: row.name,
+      xp: row.xp,
+      rank: row.rank,
+    }))
     return [...HYBRID_TOP_THREE, ...firstTwoReal].map((row) => ({
       ...row,
       you: myLiveRank !== null && row.rank === myLiveRank,
