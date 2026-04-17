@@ -141,7 +141,6 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
         .select('id, username, full_name, xp, created_at')
         .order('xp', { ascending: false })
         .order('created_at', { ascending: true })
-        .limit(50)
 
       let data: DbProfileRow[] | null = primary.data as DbProfileRow[] | null
       let error = primary.error
@@ -153,7 +152,6 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
           .select('id, username, full_name, xp, updated_at')
           .order('xp', { ascending: false })
           .order('updated_at', { ascending: true })
-          .limit(50)
         data = fallback.data as DbProfileRow[] | null
         error = fallback.error
       }
@@ -202,7 +200,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
           return a.id.localeCompare(b.id)
         })
 
-      // Rank is derived from list order (index + 4 because #1-#3 are fixed bots).
+      // Rank is derived from full real-user order (+3 because #1-#3 are fixed fake bosses).
       const ranked: RankedProfileRow[] = parsed.map((row, index) => ({
         id: row.id,
         name: row.name,
@@ -298,7 +296,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
   }
 
   return (
-    <div className="pb-28">
+    <div className="overflow-y-auto pb-20">
       <motion.header
         className="px-1"
         initial={{ opacity: 0, y: 16 }}
@@ -326,7 +324,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
               setIsJoined(true)
               await updateUserXP(20)
             }}
-            className={`mt-4 w-full rounded-lg py-3 text-sm font-semibold tracking-wide transition-opacity duration-200 ${
+            className={`mt-4 min-h-12 w-full rounded-lg py-3 text-sm font-semibold tracking-wide transition-opacity duration-200 ${
               isJoined
                 ? 'cursor-default border border-[#00FF88]/25 bg-[#00FF88]/10 text-[#00FF88]/80'
                 : 'bg-[#00FF88] text-black hover:opacity-90 active:opacity-80'
@@ -338,41 +336,59 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
 
         {profileLocked && !lockLoading ? (
           <Card title="LEADERBOARD">
-            <div className="mx-auto max-w-md rounded-2xl border border-white/15 bg-white/10 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16),0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-              <p className="text-center text-lg font-semibold text-white">Access the Leaderboard</p>
-              <p className="mt-2 text-center text-sm text-gray-300">
-                Choose a username and display name to see your rank and join the grind.
-              </p>
-              <div className="mt-4 space-y-3">
-                <input
-                  type="text"
-                  value={displayNameInput}
-                  onChange={(e) => setDisplayNameInput(e.target.value.replace(/\s/g, ''))}
-                  placeholder="Display Name"
-                  className="w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-[#00FF88]/45 focus:ring-2 focus:ring-[#00FF88]/20"
-                />
-                <input
-                  type="text"
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value.replace(/\s/g, ''))}
-                  placeholder="Username"
-                  className="w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-[#00FF88]/45 focus:ring-2 focus:ring-[#00FF88]/20"
-                />
-                {unlockError ? <p className="text-center text-xs font-medium text-red-400">{unlockError}</p> : null}
-                <button
-                  type="button"
-                  onClick={handleUnlockProfile}
-                  disabled={unlockSaving}
-                  className="w-full rounded-xl bg-[#00FF88] py-3 text-sm font-bold text-black transition hover:brightness-105 disabled:opacity-50"
-                >
-                  {unlockSaving ? 'Saving...' : 'Save'}
-                </button>
+            <div className="relative">
+              <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1 opacity-45 blur-[1px]">
+                {topFiveRows.map((r) => (
+                  <div key={`${r.rank}-${r.name}`} className={rowGlass}>
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 text-center text-sm font-semibold text-gray-500">#{r.rank}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-white">{r.name}</p>
+                        <p className="text-xs text-gray-500">XP</p>
+                      </div>
+                    </div>
+                    <span className="font-mono text-sm font-semibold text-[#00FF88]">{r.xp} XP</span>
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-0 z-30 flex items-center justify-center rounded-2xl bg-black/50 p-2 sm:p-4">
+                <div className="mx-auto w-full max-w-md rounded-2xl border border-white/15 bg-white/10 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16),0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+                  <p className="text-center text-lg font-semibold text-white">Access the Leaderboard</p>
+                  <p className="mt-2 text-center text-sm text-gray-300">
+                    Choose a username and display name to see your rank and join the grind.
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <input
+                      type="text"
+                      value={displayNameInput}
+                      onChange={(e) => setDisplayNameInput(e.target.value.replace(/\s/g, ''))}
+                      placeholder="Display Name"
+                      className="min-h-12 w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-[#00FF88]/45 focus:ring-2 focus:ring-[#00FF88]/20"
+                    />
+                    <input
+                      type="text"
+                      value={usernameInput}
+                      onChange={(e) => setUsernameInput(e.target.value.replace(/\s/g, ''))}
+                      placeholder="Username"
+                      className="min-h-12 w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-[#00FF88]/45 focus:ring-2 focus:ring-[#00FF88]/20"
+                    />
+                    {unlockError ? <p className="text-center text-xs font-medium text-red-400">{unlockError}</p> : null}
+                    <button
+                      type="button"
+                      onClick={handleUnlockProfile}
+                      disabled={unlockSaving}
+                      className="min-h-12 w-full rounded-xl bg-[#00FF88] py-3 text-sm font-bold text-black transition hover:brightness-105 disabled:opacity-50"
+                    >
+                      {unlockSaving ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
         ) : (
           <Card title="LEADERBOARD">
-            <div className="space-y-2">
+            <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
               {topFiveRows.map((r) => (
                 <div
                   key={`${r.rank}-${r.name}`}
@@ -431,7 +447,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
                   disabled={voted}
                   aria-pressed={voted ? isSelected : undefined}
                   onClick={() => setSelectedOption(idx)}
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-all duration-200 ${
+                  className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-all duration-200 ${
                     voted
                       ? isSelected
                         ? 'cursor-default border border-[#00FF88]/55 bg-[#00FF88]/12 text-[#00FF88] shadow-[0_0_24px_rgba(0,255,136,0.12)]'

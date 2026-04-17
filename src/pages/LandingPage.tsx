@@ -183,7 +183,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
         {/* Hero */}
         <section
           id="top"
-          className="relative flex min-h-[min(100dvh,920px)] flex-col items-center justify-center overflow-x-hidden px-4 pb-12 pt-4 text-center sm:min-h-screen sm:px-5 sm:pt-6 md:px-8"
+          className="relative flex min-h-[min(100dvh,920px)] flex-col items-center justify-center overflow-x-hidden px-4 pb-12 pt-4 text-center sm:min-h-[100dvh] sm:px-5 sm:pt-6 md:px-8"
         >
           <motion.div
             className="relative z-20 mx-auto w-full max-w-5xl pointer-events-none"

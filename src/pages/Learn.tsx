@@ -139,7 +139,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
   }
 
   return (
-    <div className="pb-28">
+    <div className="overflow-y-auto pb-20">
       <motion.header
         className="px-1"
         initial={{ opacity: 0, y: 16 }}
@@ -192,7 +192,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                     .join(', '),
                 }}
               >
-                <div className="flex gap-4">
+                <div className="flex flex-col gap-6 md:flex-row">
                   <div className="shrink-0" style={{ color: theme.accent }}>
                     <LevelGlyph levelId={level.id} />
                   </div>
@@ -238,7 +238,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                               setPicked(null)
                               setCorrectCount(0)
                             }}
-                            className={`flex w-full items-center justify-between rounded-lg border px-3 py-3 text-left transition-colors duration-200 ${
+                            className={`flex min-h-12 w-full items-center justify-between rounded-lg border px-3 py-3 text-left transition-colors duration-200 ${
                               disabled
                                 ? 'cursor-not-allowed border-white/5 bg-black/30 opacity-45'
                                 : 'border-white/10 bg-white/5 hover:bg-white/[0.09]'
@@ -300,7 +300,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                     <button
                       type="button"
                       onClick={closeLesson}
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                      className="min-h-12 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
                     >
                       Close
                     </button>
@@ -309,7 +309,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                   <button
                     type="button"
                     onClick={startQuiz}
-                    className="mt-6 w-full rounded-lg bg-[#00FF88] py-3 text-sm font-semibold text-black transition-opacity duration-200 hover:opacity-90"
+                    className="mt-6 min-h-12 w-full rounded-lg bg-[#00FF88] py-3 text-sm font-semibold text-black transition-opacity duration-200 hover:opacity-90"
                   >
                     Start quiz
                   </button>
@@ -325,7 +325,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                     <button
                       type="button"
                       onClick={closeLesson}
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white"
+                      className="min-h-12 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white"
                     >
                       Exit
                     </button>
@@ -358,7 +358,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                               : { x: 0 }
                           }
                           transition={{ duration: 0.42, ease: 'easeInOut' }}
-                          className={`w-full rounded-lg border px-3 py-3 text-left text-sm font-medium transition-colors duration-200 ${tone}`}
+                          className={`min-h-12 w-full rounded-lg border px-3 py-3 text-left text-sm font-medium transition-colors duration-200 ${tone}`}
                         >
                           {opt.text}
                         </motion.button>
@@ -380,18 +380,18 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                   ) : (
                     <p className="mt-2 text-sm text-gray-500">Try again to earn XP.</p>
                   )}
-                  <div className="mt-6 flex gap-2">
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                     <button
                       type="button"
                       onClick={finishLesson}
-                      className="flex-1 rounded-lg bg-[#00FF88] py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+                      className="min-h-12 flex-1 rounded-lg bg-[#00FF88] py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90"
                     >
                       {correctCount >= 3 ? 'Claim XP' : 'Retry quiz'}
                     </button>
                     <button
                       type="button"
                       onClick={closeLesson}
-                      className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10"
+                      className="min-h-12 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10"
                     >
                       Done
                     </button>
