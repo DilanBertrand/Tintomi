@@ -4,7 +4,25 @@ import { loadProfileWithStreakSync } from '../lib/profiles'
 import { supabase } from '../lib/supabase'
 import type { ProfileRow } from '../types/profile'
 
+function isNetworkAuthError(error: AuthError | Error): boolean {
+  const msg = (error.message ?? '').toLowerCase()
+  return (
+    msg === 'failed to fetch' ||
+    msg.includes('networkerror') ||
+    msg.includes('network request failed') ||
+    msg.includes('load failed')
+  )
+}
+
 function formatAuthError(error: AuthError): string {
+  if (isNetworkAuthError(error)) {
+    const envConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
+    if (!envConfigured) {
+      return 'Cannot reach Supabase. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to a .env file, then restart the dev server.'
+    }
+    return 'Cannot reach Supabase. Check your internet connection, Supabase project URL, and that the project is not paused.'
+  }
+
   const msg = (error.message ?? '').toLowerCase()
   if (
     msg.includes('invalid login') ||
@@ -14,6 +32,16 @@ function formatAuthError(error: AuthError): string {
     return 'Invalid login credentials.'
   }
   return error.message || 'Something went wrong. Try again.'
+}
+
+function logAuthError(scope: string, error: AuthError | Error): void {
+  console.error(`[auth] ${scope}`, {
+    message: error.message,
+    name: 'name' in error ? error.name : undefined,
+    status: 'status' in error ? error.status : undefined,
+    code: 'code' in error ? error.code : undefined,
+    cause: 'cause' in error ? error.cause : undefined,
+  })
 }
 
 export type SignUpResult =
@@ -86,16 +114,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
-    if (error) return { error: formatAuthError(error) }
-    return { error: null }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      if (error) {
+        logAuthError('signIn', error)
+        return { error: formatAuthError(error) }
+      }
+      return { error: null }
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Could not sign in.')
+      logAuthError('signIn (unexpected)', error)
+      return { error: formatAuthError(error as AuthError) }
+    }
   }, [])
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password })
-    if (error) return { error: error.message || 'Could not create account.', code: error.code }
-    if (!data.session) return { error: null, needsEmailConfirmation: true }
-    return { error: null }
+    try {
+      const { data, error } = await supabase.auth.signUp({ email: email.trim(), password })
+      if (error) {
+        logAuthError('signUp', error)
+        return { error: formatAuthError(error), code: error.code }
+      }
+      if (!data.session) return { error: null, needsEmailConfirmation: true }
+      return { error: null }
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Could not create account.')
+      logAuthError('signUp (unexpected)', error)
+      return { error: formatAuthError(error as AuthError) }
+    }
   }, [])
 
   const signOut = useCallback(async () => {

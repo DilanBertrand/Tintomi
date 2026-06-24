@@ -61,32 +61,38 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
     setInfo(null)
     setSubmitting(true)
 
-    const { exists: profileAlready, skipped: profileCheckSkipped } = await profileExistsForEmail(email)
-    if (!profileCheckSkipped && profileAlready) {
-      setSubmitting(false)
-      setError(ALREADY_REGISTERED_MESSAGE)
-      return
-    }
+    try {
+      const { exists: profileAlready, skipped: profileCheckSkipped } = await profileExistsForEmail(email)
+      if (!profileCheckSkipped && profileAlready) {
+        setError(ALREADY_REGISTERED_MESSAGE)
+        return
+      }
 
-    const result = await signUp(email, password)
-    setSubmitting(false)
-    if (result.error) {
-      const duplicate =
-        looksLikeDuplicateSignupError(result.error) ||
-        result.code === 'user_already_exists' ||
-        result.code === 'identity_already_exists'
-      setError(duplicate ? ALREADY_REGISTERED_MESSAGE : result.error)
-      return
+      const result = await signUp(email, password)
+      if (result.error) {
+        const duplicate =
+          looksLikeDuplicateSignupError(result.error) ||
+          result.code === 'user_already_exists' ||
+          result.code === 'identity_already_exists'
+        setError(duplicate ? ALREADY_REGISTERED_MESSAGE : result.error)
+        return
+      }
+      if (result.needsEmailConfirmation) {
+        const trimmedEmail = email.trim()
+        setInfo('Check your inbox to confirm your email, then log in.')
+        setResendEmail(trimmedEmail)
+        setCanResend(false)
+        setTimer(30)
+        return
+      }
+      window.history.replaceState(null, '', '/home')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong. Try again.'
+      console.error('[signup] unexpected error', err)
+      setError(message)
+    } finally {
+      setSubmitting(false)
     }
-    if (result.needsEmailConfirmation) {
-      const trimmedEmail = email.trim()
-      setInfo('Check your inbox to confirm your email, then log in.')
-      setResendEmail(trimmedEmail)
-      setCanResend(false)
-      setTimer(30)
-      return
-    }
-    window.history.replaceState(null, '', '/home')
   }
 
   async function handleResendEmail() {
