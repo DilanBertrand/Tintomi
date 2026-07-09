@@ -68,25 +68,25 @@ export function ProfileSettingsModal({ initialFullName, initialUsername, onClose
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
     >
-      <button type="button" className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !saving && onClose()} aria-label="Close settings" />
+      <button type="button" className="absolute inset-0 bg-[#121a15]" onClick={() => !saving && onClose()} aria-label="Close settings" />
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 16 }}
         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-md rounded-t-3xl border border-white/10 bg-[#0a0f1a] p-6 shadow-2xl sm:rounded-3xl"
+        className="relative z-10 w-full max-w-md rounded-t-3xl border border-[#232b25] bg-[#0a0f1a] p-6 sm:rounded-3xl"
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 id="profile-settings-title" className="text-lg font-semibold text-white">
+            <h2 id="profile-settings-title" className="text-lg font-semibold text-[#e9ece8]">
               Edit profile
             </h2>
-            <p className="mt-1 text-sm text-gray-500">Display name is saved to your profile.</p>
+            <p className="mt-1 text-sm text-[#a7b0a8]">Display name is saved to your profile.</p>
           </div>
           <button
             type="button"
             onClick={() => !saving && onClose()}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-white/10 hover:text-white"
+            className="rounded-full p-2 text-[#a7b0a8] transition hover:bg-[#1a221c] hover:text-[#e9ece8]"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -95,7 +95,7 @@ export function ProfileSettingsModal({ initialFullName, initialUsername, onClose
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="settings-full-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <label htmlFor="settings-full-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#a7b0a8]">
               Display name
             </label>
             <input
@@ -103,13 +103,13 @@ export function ProfileSettingsModal({ initialFullName, initialUsername, onClose
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#00FF88]/50 focus:ring-2 focus:ring-[#00FF88]/25"
+              className="w-full rounded-xl border border-[#232b25] bg-[#0f1412] px-4 py-3 text-[#e9ece8] outline-none focus:border-[#2979ff]/50 focus:ring-2 focus:ring-[#2979ff]/25"
               placeholder="Your name"
               autoComplete="name"
             />
           </div>
           <div>
-            <label htmlFor="settings-username" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <label htmlFor="settings-username" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#a7b0a8]">
               Username <span className="font-normal normal-case text-gray-600">(optional)</span>
             </label>
             <input
@@ -117,7 +117,7 @@ export function ProfileSettingsModal({ initialFullName, initialUsername, onClose
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
-              className="w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none focus:border-[#00FF88]/50 focus:ring-2 focus:ring-[#00FF88]/25"
+              className="w-full rounded-xl border border-[#232b25] bg-[#0f1412] px-4 py-3 text-[#e9ece8] outline-none focus:border-[#2979ff]/50 focus:ring-2 focus:ring-[#2979ff]/25"
               placeholder="unique_handle"
               autoComplete="username"
             />
@@ -133,14 +133,14 @@ export function ProfileSettingsModal({ initialFullName, initialUsername, onClose
             <button
               type="button"
               onClick={() => !saving && onClose()}
-              className="flex-1 rounded-xl border border-white/15 py-3 text-sm font-semibold text-gray-300 transition hover:bg-white/5"
+              className="flex-1 rounded-xl border border-[#232b25] py-3 text-sm font-semibold text-[#a7b0a8] transition hover:bg-transparent"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#00FF88] py-3 text-sm font-bold text-black transition hover:brightness-105 disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#e9ece8] py-3 text-sm font-bold text-[#0f1412] transition hover:brightness-105 disabled:opacity-50"
             >
               {saving ? (
                 <>

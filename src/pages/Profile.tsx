@@ -56,9 +56,9 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">OPERATOR</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Profile</h1>
-        <p className="mt-1 max-w-md text-sm text-gray-500">Account overview and progress.</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a7b0a8]">OPERATOR</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#e9ece8] sm:text-3xl">Profile</h1>
+        <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">Account overview and progress.</p>
       </motion.header>
 
       <StaggerPage className="mt-8 space-y-6">
@@ -66,9 +66,9 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
           <div className="flex items-center gap-4">
             <ProfileAvatar key={avatarUrl ?? 'none'} avatarUrl={avatarUrl} initial={avatarInitial(displayName)} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xl font-semibold text-white">{displayName}</p>
-              <p className="truncate text-sm text-gray-500">{user?.email ?? 'Signed in'}</p>
-              <p className="mt-0.5 text-sm text-gray-500">
+              <p className="truncate text-xl font-semibold text-[#e9ece8]">{displayName}</p>
+              <p className="truncate text-sm text-[#a7b0a8]">{user?.email ?? 'Signed in'}</p>
+              <p className="mt-0.5 text-sm text-[#a7b0a8]">
                 Level {level} | {xp} XP total
               </p>
             </div>
@@ -77,7 +77,7 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
             <ProgressBar value={xpInto} max={100} label="XP / 100 in this level" />
           </div>
           {user && profile === null ? (
-            <p className="mt-3 text-xs leading-relaxed text-amber-200/90">{PROFILES_TABLE_SETUP_HINT}</p>
+            <p className="mt-3 text-xs leading-relaxed text-[#a7b0a8]">{PROFILES_TABLE_SETUP_HINT}</p>
           ) : null}
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button
@@ -86,7 +86,7 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
                 setSettingsKey((k) => k + 1)
                 setSettingsOpen(true)
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#232b25] bg-transparent py-3 text-sm font-semibold text-[#e9ece8] transition hover:bg-[#1a221c]"
             >
               <Settings className="h-4 w-4" aria-hidden />
               Edit profile
@@ -104,17 +104,17 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
         </Card>
 
         <Card title="PORTFOLIO" subtitle="Cash + holdings">
-          <p className="font-mono text-3xl font-semibold text-[#00FF88]">${portfolioValue.toFixed(2)}</p>
-          <p className="mt-2 text-sm text-gray-500">Not financial advice.</p>
+          <p className="font-mono text-3xl font-semibold text-[#2979ff]">${portfolioValue.toFixed(2)}</p>
+          <p className="mt-2 text-sm text-[#a7b0a8]">Not financial advice.</p>
         </Card>
 
         <Card title="STREAK" subtitle="Consecutive days active">
           <div className="flex items-end justify-between">
             <div>
-              <p className="font-mono text-4xl font-semibold text-white">{streak}</p>
-              <p className="text-sm text-gray-500">days logged</p>
+              <p className="font-mono text-4xl font-semibold text-[#e9ece8]">{streak}</p>
+              <p className="text-sm text-[#a7b0a8]">days logged</p>
             </div>
-            <span className="rounded-full bg-[#00FF88]/10 px-3 py-1 text-xs font-semibold text-[#00FF88]">
+            <span className="rounded-full bg-[#2979ff]/10 px-3 py-1 text-xs font-semibold text-[#2979ff]">
               {streak > 0 ? 'Active' : 'Start today'}
             </span>
           </div>
@@ -125,13 +125,13 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
             {badgesForXp(xp).map((b) => (
               <div
                 key={b.label}
-                className={`rounded-xl border-x border-b border-white/10 border-t border-t-white/20 bg-white/5 px-3 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] backdrop-blur-md transition-colors duration-300 hover:bg-white/[0.07] ${
-                  b.unlocked ? 'border-[#00FF88]/25' : 'opacity-45'
+                className={`rounded-xl border-x border-b border-[#232b25] border-t border-t-white/20 bg-transparent px-3 py-3 transition-colors duration-300 hover:bg-white/[0.07] ${
+                  b.unlocked ? 'border-[#2979ff]/25' : 'opacity-45'
                 }`}
               >
                 <p className="text-xl">{b.emoji}</p>
-                <p className="mt-1 text-sm font-semibold text-white">{b.label}</p>
-                <p className="text-[11px] text-gray-500">{b.unlocked ? 'Unlocked' : 'Locked'}</p>
+                <p className="mt-1 text-sm font-semibold text-[#e9ece8]">{b.label}</p>
+                <p className="text-[11px] text-[#a7b0a8]">{b.unlocked ? 'Unlocked' : 'Locked'}</p>
               </div>
             ))}
           </div>

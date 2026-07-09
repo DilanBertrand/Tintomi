@@ -1,44 +1,24 @@
-/** Per-track accent for Learn levels (gaming terminal HUD) */
+/** Per-track accent for Learn levels (flat, restrained) */
 export type LevelTheme = {
   accent: string
   accentSoft: string
   glow: string
 }
 
+const FLAT_THEME: LevelTheme = {
+  accent: '#2979ff',
+  accentSoft: 'rgba(41, 121, 255, 0.14)',
+  glow: 'none',
+}
+
 export const LEVEL_THEMES: Record<string, LevelTheme> = {
-  'money-basics': {
-    accent: '#38BDF8',
-    accentSoft: 'rgba(56, 189, 248, 0.14)',
-    glow: '0 0 28px rgba(56, 189, 248, 0.22)',
-  },
-  saving: {
-    accent: '#EAB308',
-    accentSoft: 'rgba(234, 179, 8, 0.14)',
-    glow: '0 0 28px rgba(234, 179, 8, 0.2)',
-  },
-  investing: {
-    accent: '#00FF88',
-    accentSoft: 'rgba(0, 255, 136, 0.14)',
-    glow: '0 0 28px rgba(0, 255, 136, 0.22)',
-  },
-  business: {
-    accent: '#2DD4BF',
-    accentSoft: 'rgba(45, 212, 191, 0.14)',
-    glow: '0 0 28px rgba(45, 212, 191, 0.2)',
-  },
-  economy: {
-    accent: '#FB923C',
-    accentSoft: 'rgba(251, 146, 60, 0.14)',
-    glow: '0 0 28px rgba(251, 146, 60, 0.2)',
-  },
+  'money-basics': FLAT_THEME,
+  saving: FLAT_THEME,
+  investing: FLAT_THEME,
+  business: FLAT_THEME,
+  economy: FLAT_THEME,
 }
 
 export function themeForLevel(id: string): LevelTheme {
-  return (
-    LEVEL_THEMES[id] ?? {
-      accent: '#00FF88',
-      accentSoft: 'rgba(0, 255, 136, 0.12)',
-      glow: '0 0 20px rgba(0, 255, 136, 0.15)',
-    }
-  )
+  return LEVEL_THEMES[id] ?? FLAT_THEME
 }

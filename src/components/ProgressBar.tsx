@@ -16,14 +16,14 @@ export function ProgressBar({
   return (
     <div className={`w-full ${className}`}>
       {label ? (
-        <div className="mb-1 flex justify-between text-xs text-gray-500">
+        <div className="mb-1 flex justify-between text-xs text-[#a7b0a8]">
           <span>{label}</span>
-          <span className="font-mono font-medium text-[#00FF88]">{Math.round(pct)}%</span>
+          <span className="font-mono font-medium text-[#2979ff]">{Math.round(pct)}%</span>
         </div>
       ) : null}
-      <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-transparent">
         <div
-          className="h-full rounded-full bg-[#00FF88] transition-[width] duration-500 ease-out"
+          className="h-full rounded-full bg-[#2979ff] transition-[width] duration-500 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>

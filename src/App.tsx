@@ -103,36 +103,52 @@ export default function App() {
   /** Load Learn XP + completed lessons from localStorage after auth settles; reset when logged out */
   useEffect(() => {
     if (authLoading) return
-    if (!user?.id) {
-      setXp(0)
-      setCompletedLessonIds([])
-      setLearnPersistReady(false)
-      return
-    }
-    try {
-      const xpRaw = localStorage.getItem(localProgressKeys.learnXp(user.id))
-      if (xpRaw !== null) {
-        const n = Number(xpRaw)
-        if (Number.isFinite(n) && n >= 0) setXp(Math.floor(n))
-      } else {
-        setXp(0)
+    let cancelled = false
+
+    void (async () => {
+      if (!user?.id) {
+        if (!cancelled) {
+          setXp(0)
+          setCompletedLessonIds([])
+          setLearnPersistReady(false)
+        }
+        return
       }
-      const lessonsRaw = localStorage.getItem(localProgressKeys.learnCompletedLessons(user.id))
-      if (lessonsRaw !== null) {
-        const parsed: unknown = JSON.parse(lessonsRaw)
-        if (Array.isArray(parsed) && parsed.every((x): x is string => typeof x === 'string')) {
-          setCompletedLessonIds(parsed)
-        } else {
+      try {
+        const xpRaw = localStorage.getItem(localProgressKeys.learnXp(user.id))
+        if (!cancelled) {
+          if (xpRaw !== null) {
+            const n = Number(xpRaw)
+            setXp(Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0)
+          } else {
+            setXp(0)
+          }
+        }
+        const lessonsRaw = localStorage.getItem(localProgressKeys.learnCompletedLessons(user.id))
+        if (!cancelled) {
+          if (lessonsRaw !== null) {
+            const parsed: unknown = JSON.parse(lessonsRaw)
+            if (Array.isArray(parsed) && parsed.every((x): x is string => typeof x === 'string')) {
+              setCompletedLessonIds(parsed)
+            } else {
+              setCompletedLessonIds([])
+            }
+          } else {
+            setCompletedLessonIds([])
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setXp(0)
           setCompletedLessonIds([])
         }
-      } else {
-        setCompletedLessonIds([])
       }
-    } catch {
-      setXp(0)
-      setCompletedLessonIds([])
+      if (!cancelled) setLearnPersistReady(true)
+    })()
+
+    return () => {
+      cancelled = true
     }
-    setLearnPersistReady(true)
   }, [user?.id, authLoading])
 
   useEffect(() => {
@@ -154,7 +170,8 @@ export default function App() {
   }, [user?.id, completedLessonIds, learnPersistReady])
 
   useEffect(() => {
-    if (isLoggedIn) setAuthGateView('landing')
+    if (!isLoggedIn) return
+    void Promise.resolve().then(() => setAuthGateView('landing'))
   }, [isLoggedIn])
 
   /** Keep / /login /signup in sync with auth gate when logged out. */
@@ -182,10 +199,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoggedIn) return
     const token = import.meta.env.VITE_FINNHUB_TOKEN as string | undefined
-    if (!token) {
-      setFinnhubHistory({})
-      return
-    }
+    if (!token) return
 
     let cancelled = false
 
@@ -276,11 +290,13 @@ export default function App() {
   useEffect(() => {
     if (!isLoggedIn || authLoading) return
     const t = pathToTab(window.location.pathname)
-    setTab(t)
     const canonical = tabToPath(t)
-    if (window.location.pathname !== canonical) {
-      window.history.replaceState(null, '', canonical)
-    }
+    void Promise.resolve().then(() => {
+      setTab(t)
+      if (window.location.pathname !== canonical) {
+        window.history.replaceState(null, '', canonical)
+      }
+    })
   }, [isLoggedIn, authLoading])
 
   useEffect(() => {
@@ -308,9 +324,9 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#030712] text-[#00FF88]">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#0f1412] text-[#2979ff]">
         <Loader2 className="h-10 w-10 animate-spin" aria-hidden />
-        <p className="text-sm font-semibold uppercase tracking-wide text-neutral-400">Loading...</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-[#a7b0a8]">Loading...</p>
       </div>
     )
   }
@@ -333,7 +349,7 @@ export default function App() {
       )
     }
     return (
-      <div className="min-h-dvh bg-[#030712] text-gray-100">
+      <div className="min-h-dvh bg-[#0f1412] text-gray-100">
         <LandingPage onGoToSignUp={() => setAuthGateView('signup')} />
       </div>
     )

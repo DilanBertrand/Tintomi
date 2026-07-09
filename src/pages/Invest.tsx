@@ -26,7 +26,7 @@ type InvestProps = {
 }
 
 const subPanel =
-  'rounded-xl border border-[#00FF88]/30 bg-[#0A0A0A] p-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_0_32px_rgba(0,255,136,0.08)] transition-all duration-300 hover:border-[#00FF88]/45 hover:shadow-[0_0_44px_rgba(0,255,136,0.12)]'
+  'rounded-xl border border-[#2979ff]/30 bg-[#121a15] p-3 transition-all duration-300 hover:border-[#2979ff]/45 '
 
 function initWatchLines(chartSeries: PriceHistory, live: LivePrices): Record<string, number[]> {
   const o: Record<string, number[]> = {}
@@ -49,27 +49,32 @@ export function Invest({ balance, portfolio, live, chartSeries, onBuy, onSell }:
 
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const liveRef = useRef(live)
-  liveRef.current = live
+
+  useEffect(() => {
+    liveRef.current = live
+  }, [live])
 
   const [watchLines, setWatchLines] = useState<Record<string, number[]>>(() =>
     initWatchLines(chartSeries, live),
   )
 
   useEffect(() => {
-    setWatchLines((prev) => {
-      let changed = false
-      const next = { ...prev }
-      for (const s of stocks) {
-        const fh = chartSeries[s.id]
-        if (fh && fh.length >= 8) {
-          const sliced = fh.slice(-WATCHLIST_POINTS)
-          if (JSON.stringify(next[s.id]) !== JSON.stringify(sliced)) {
-            next[s.id] = sliced
-            changed = true
+    void Promise.resolve().then(() => {
+      setWatchLines((prev) => {
+        let changed = false
+        const next = { ...prev }
+        for (const s of stocks) {
+          const fh = chartSeries[s.id]
+          if (fh && fh.length >= 8) {
+            const sliced = fh.slice(-WATCHLIST_POINTS)
+            if (JSON.stringify(next[s.id]) !== JSON.stringify(sliced)) {
+              next[s.id] = sliced
+              changed = true
+            }
           }
         }
-      }
-      return changed ? next : prev
+        return changed ? next : prev
+      })
     })
   }, [chartSeries])
 
@@ -115,8 +120,8 @@ export function Invest({ balance, portfolio, live, chartSeries, onBuy, onSell }:
   return (
     <StaggerPage className="space-y-6 pb-28">
       <motion.header variants={fadeSlideUp} className="px-1">
-        <h1 className="tm-premium-title text-3xl font-black uppercase tracking-tighter sm:text-4xl">PAPER TRADE</h1>
-        <p className="mt-2 text-[1.1rem] text-neutral-300">
+        <h1 className="tm-premium-title text-3xl sm:text-4xl">Paper trade</h1>
+        <p className="mt-2 text-[1.1rem] text-[#a7b0a8]">
           Portfolio up top. Watchlist below — neon line tracks your last {WATCHLIST_POINTS} ticks (local ticks + optional
           Finnhub seed).
         </p>
@@ -125,18 +130,18 @@ export function Invest({ balance, portfolio, live, chartSeries, onBuy, onSell }:
       <Card title="Portfolio" subtitle="Cash + holdings" accent="neon" glowRgb="0, 255, 136">
         <div className="grid grid-cols-2 gap-3">
           <div className={subPanel}>
-            <p className="text-[10px] font-bold uppercase tracking-tighter text-neutral-500">Cash</p>
-            <p className="mt-1 font-mono text-lg font-bold text-white">${balance.toFixed(2)}</p>
+            <p className="text-[10px] font-bold uppercase tracking-tighter text-[#6b756c]">Cash</p>
+            <p className="mt-1 font-mono text-lg font-bold text-[#e9ece8]">${balance.toFixed(2)}</p>
           </div>
           <div className={subPanel}>
-            <p className="text-[10px] font-bold uppercase tracking-tighter text-[#00FF88]">Total</p>
-            <p className="mt-1 font-mono text-lg font-bold text-[#00FF88]">${portfolioValue.toFixed(2)}</p>
+            <p className="text-[10px] font-bold uppercase tracking-tighter text-[#2979ff]">Total</p>
+            <p className="mt-1 font-mono text-lg font-bold text-[#2979ff]">${portfolioValue.toFixed(2)}</p>
           </div>
         </div>
       </Card>
 
       <motion.div variants={fadeSlideUp}>
-        <h2 className="tm-headline mb-4 px-1 text-lg font-black uppercase tracking-tighter sm:text-xl">Watchlist</h2>
+        <h2 className="tm-headline mb-4 px-1 text-lg sm:text-xl">Watchlist</h2>
         <div className="space-y-2">
           {stocks.map((s) => (
             <StockCard
@@ -157,7 +162,7 @@ export function Invest({ balance, portfolio, live, chartSeries, onBuy, onSell }:
       </motion.div>
 
       <Card title="Disclosure" subtitle="Not real markets" accent="neutral" glowRgb="160, 165, 175">
-        <p className="text-sm leading-relaxed text-neutral-500">
+        <p className="text-sm leading-relaxed text-[#6b756c]">
           External market data is delayed and subject to vendor limits. Not advice.
         </p>
       </Card>

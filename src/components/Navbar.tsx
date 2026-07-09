@@ -26,7 +26,7 @@ type NavbarProps = {
 
 export function Navbar({ active, onChange, profileTabLabel }: NavbarProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100] isolate border-t border-white/10 bg-black/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_48px_rgba(0,0,0,0.75)] backdrop-blur-xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-[100] isolate border-t border-[#232b25] bg-[#0f1412] pb-[env(safe-area-inset-bottom)]">
       <div className="relative mx-auto flex w-full max-w-4xl items-stretch justify-between gap-0.5 px-1.5 py-2 sm:gap-1 sm:px-6 sm:py-3 lg:px-10">
         {items.map((item) => {
           const isActive = active === item.id
@@ -39,27 +39,13 @@ export function Navbar({ active, onChange, profileTabLabel }: NavbarProps) {
               onClick={() => onChange(item.id)}
               whileTap={{ scale: 0.97 }}
               className={`relative flex min-h-[3.25rem] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-full px-1 py-1.5 transition-colors duration-200 sm:min-h-0 sm:gap-1 sm:px-3 sm:py-2 ${
-                isActive ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]'
+                isActive ? 'bg-[#1a221c]' : 'hover:bg-[#161d18]'
               }`}
             >
-              {isActive ? (
-                <>
-                  <span
-                    className="pointer-events-none absolute -bottom-1 left-1/2 h-9 w-20 -translate-x-1/2 rounded-full bg-[#00FF88]/45 blur-2xl sm:-bottom-2 sm:h-14 sm:w-32 sm:bg-[#00FF88]/50 sm:blur-3xl"
-                    aria-hidden
-                  />
-                  <span
-                    className="pointer-events-none absolute -bottom-0.5 left-1/2 h-6 w-14 -translate-x-1/2 rounded-full bg-[#00FF88]/65 blur-lg sm:-bottom-1 sm:h-8 sm:w-20 sm:blur-xl"
-                    aria-hidden
-                  />
-                </>
-              ) : null}
               <span className="relative flex h-8 w-8 shrink-0 items-center justify-center sm:h-9 sm:w-9">
                 <Icon
                   className={`relative z-10 h-[20px] w-[20px] sm:h-[22px] sm:w-[22px] md:h-6 md:w-6 ${
-                    isActive
-                      ? 'text-[#00FF88] [filter:drop-shadow(0_0_10px_rgba(0,255,136,0.95))_drop-shadow(0_0_22px_rgba(0,255,136,0.75))_drop-shadow(0_0_40px_rgba(0,255,136,0.45))] md:[filter:drop-shadow(0_0_14px_rgba(0,255,136,1))_drop-shadow(0_0_28px_rgba(0,255,136,1))_drop-shadow(0_0_56px_rgba(0,255,136,0.85))]'
-                      : 'text-neutral-500'
+                    isActive ? 'text-[#2979ff]' : 'text-[#6b756c]'
                   }`}
                   strokeWidth={isActive ? 2.35 : 2}
                   aria-hidden
@@ -67,9 +53,7 @@ export function Navbar({ active, onChange, profileTabLabel }: NavbarProps) {
               </span>
               <span
                 className={`relative z-10 w-full max-w-[min(100%,4.5rem)] truncate text-center text-[9px] font-bold uppercase leading-tight tracking-tighter min-[400px]:max-w-[5.25rem] min-[400px]:text-[10px] sm:max-w-[6rem] sm:text-[11px] md:max-w-full ${
-                  isActive
-                    ? 'bg-gradient-to-r from-[#d4a574] via-[#f5e6c8] to-[#e8edf2] bg-clip-text text-transparent'
-                    : 'text-neutral-400'
+                  isActive ? 'text-[#e9ece8]' : 'text-[#a7b0a8]'
                 }`}
               >
                 {tabLabel}

@@ -7,10 +7,10 @@ function LiveDot() {
   return (
     <span className="relative flex h-2.5 w-2.5 shrink-0" title="Live">
       <span
-        className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00FF88] opacity-45"
+        className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2979ff] opacity-45"
         aria-hidden
       />
-      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#00FF88] shadow-[0_0_12px_rgba(0,255,136,0.95),0_0_24px_rgba(0,255,136,0.45)]" />
+      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#2979ff]" />
     </span>
   )
 }
@@ -44,7 +44,7 @@ export function StockCard({
   const up = liveChangePct >= 0
   const canBuy = balance >= livePrice - 1e-9
   const canSell = shares > 0
-  const priceColor = up ? 'text-[#00FF88]' : 'text-[#FF2D92]'
+  const priceColor = up ? 'text-[#2979ff]' : 'text-[#e06a55]'
 
   const series =
     sparkValues.length >= 2 ? sparkValues : [livePrice, Math.max(0.01, livePrice * 1.002)]
@@ -58,7 +58,7 @@ export function StockCard({
     <motion.div
       variants={fadeSlideUp}
       layout
-      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-[#00FF88]/35 bg-[#0A0A0A] px-4 py-3 shadow-[0_0_48px_rgba(0,255,136,0.1),inset_0_1px_0_0_rgba(255,255,255,0.08)] transition-all duration-300 hover:scale-[1.03] hover:border-[#00FF88]/55 hover:shadow-[0_0_72px_rgba(0,255,136,0.18)]"
+      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-[#232b25] bg-[#121a15] px-4 py-3 transition-all duration-300 hover:scale-[1.03] hover:border-[#39423b]"
       role="button"
       tabIndex={0}
       aria-expanded={expanded}
@@ -71,29 +71,21 @@ export function StockCard({
         }
       }}
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-40 blur-3xl transition-opacity duration-300 group-hover:opacity-70"
-        style={{
-          background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,255,136,0.18), transparent 70%)',
-        }}
-        aria-hidden
-      />
-
       <div className="relative flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="bg-gradient-to-r from-[#d4a574] to-[#f0f4f8] bg-clip-text text-xs font-semibold text-transparent">
+            <p className="font-mono text-xs font-semibold text-[#2979ff]">
               {stock.symbol}
             </p>
-            <p className="truncate text-sm font-semibold text-white">{stock.name}</p>
-            <p className="mt-1 text-[10px] text-neutral-500">Living line · last {series.length} ticks · tap to zoom</p>
+            <p className="truncate text-sm font-semibold text-[#e9ece8]">{stock.name}</p>
+            <p className="mt-1 text-[10px] text-[#6b756c]">Living line · last {series.length} ticks · tap to zoom</p>
           </div>
           <div className="shrink-0 text-right">
             <div className="flex items-center justify-end gap-2">
               <LiveDot />
               <p className={`font-mono text-sm font-bold ${priceColor}`}>${livePrice.toFixed(2)}</p>
             </div>
-            <p className={`text-xs font-bold uppercase tracking-tighter ${up ? 'text-[#00FF88]' : 'text-[#FF2D92]'}`}>
+            <p className={`text-xs font-bold uppercase tracking-tighter ${up ? 'text-[#2979ff]' : 'text-[#e06a55]'}`}>
               {up ? '+' : ''}
               {liveChangePct.toFixed(2)}%
             </p>
@@ -118,12 +110,12 @@ export function StockCard({
 
         <div
           data-trade
-          className="flex flex-col gap-3 border-t border-white/10 pt-3 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-3 border-t border-[#232b25] pt-3 sm:flex-row sm:items-center sm:justify-between"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="text-left sm:text-right">
-            <p className="text-[10px] font-bold uppercase tracking-tighter text-neutral-500">Shares</p>
-            <p className="font-mono text-sm text-neutral-300">{shares}</p>
+            <p className="text-[10px] font-bold uppercase tracking-tighter text-[#6b756c]">Shares</p>
+            <p className="font-mono text-sm text-[#a7b0a8]">{shares}</p>
           </div>
           <div className="flex gap-2.5">
             <button
@@ -133,7 +125,7 @@ export function StockCard({
                 e.stopPropagation()
                 onBuy()
               }}
-              className="min-h-[40px] min-w-[5rem] rounded-xl bg-[#00FF88] px-4 py-2 text-xs font-black uppercase tracking-tight text-black shadow-[0_0_24px_rgba(0,255,136,0.55),inset_0_1px_0_0_rgba(255,255,255,0.4)] transition-all hover:shadow-[0_0_36px_rgba(0,255,136,0.75)] active:translate-y-px disabled:opacity-35"
+              className="min-h-[40px] min-w-[5rem] rounded-full bg-[#e9ece8] px-4 py-2 text-xs font-bold text-[#0f1412] transition-all active:translate-y-px disabled:opacity-35"
             >
               Buy
             </button>
@@ -144,7 +136,7 @@ export function StockCard({
                 e.stopPropagation()
                 onSell()
               }}
-              className="min-h-[40px] min-w-[5rem] rounded-xl border border-[#FF2D92]/35 bg-[#141414] px-4 py-2 text-xs font-black uppercase tracking-tight text-white shadow-[0_0_18px_rgba(255,45,146,0.2)] transition-all hover:shadow-[0_0_28px_rgba(255,45,146,0.35)] active:translate-y-px disabled:opacity-35"
+              className="min-h-[40px] min-w-[5rem] rounded-full border border-[#39423b] bg-transparent px-4 py-2 text-xs font-bold text-[#e9ece8] transition-all active:translate-y-px disabled:opacity-35"
             >
               Sell
             </button>
@@ -152,7 +144,7 @@ export function StockCard({
         </div>
       </div>
 
-      <p className="relative mt-2 text-xs leading-relaxed text-neutral-500">{stock.blurb}</p>
+      <p className="relative mt-2 text-xs leading-relaxed text-[#6b756c]">{stock.blurb}</p>
     </motion.div>
   )
 }

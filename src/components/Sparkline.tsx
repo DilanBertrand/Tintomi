@@ -1,5 +1,3 @@
-import { useId } from 'react'
-
 type SparklineProps = {
   values: number[]
   className?: string
@@ -20,9 +18,6 @@ export function Sparkline({
   prominent = false,
   fluid = false,
 }: SparklineProps) {
-  const uid = useId().replace(/:/g, '')
-  const filterId = `tm-spark-glow-${uid}`
-
   const pad = prominent ? 3 : 2
   const pts = values.length >= 2 ? values : values.length === 1 ? [values[0], values[0]] : [0, 0]
   const min = Math.min(...pts)
@@ -37,7 +32,7 @@ export function Sparkline({
     })
     .join(' ')
 
-  const stroke = positive ? '#00FF88' : '#FF2D92'
+  const stroke = positive ? '#2979ff' : '#e06a55'
   const sw = prominent ? 2.5 : 1.25
 
   return (
@@ -49,17 +44,6 @@ export function Sparkline({
       className={className}
       aria-hidden
     >
-      {prominent ? (
-        <defs>
-          <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.6" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-      ) : null}
       <path
         d={d}
         fill="none"
@@ -69,7 +53,6 @@ export function Sparkline({
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
         opacity={0.98}
-        filter={prominent ? `url(#${filterId})` : undefined}
       />
     </svg>
   )

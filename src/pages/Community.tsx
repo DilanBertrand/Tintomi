@@ -27,7 +27,7 @@ const HYBRID_TOP_THREE: LeaderRow[] = [
 ]
 
 const rowGlass =
-  'flex items-center justify-between rounded-xl border border-[#222222] bg-white/5 px-3 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-[#2a2a2a] hover:shadow-[0_0_20px_rgba(0,255,136,0.06)]'
+  'flex items-center justify-between rounded-xl border border-[#222222] bg-transparent px-3 py-2 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#2a2a2a] '
 
 const POLL_OPTIONS = [
   'Subscriptions stacking silently',
@@ -38,6 +38,67 @@ const POLL_OPTIONS = [
 /** Vote distribution shown after the user casts. */
 const POLL_RESULT_PCTS: readonly [number, number, number] = [45, 30, 25]
 
+function readPollVote(userId: string): number | null {
+  try {
+    const raw = localStorage.getItem(localProgressKeys.communityPoll(userId))
+    if (raw === null) return null
+    const n = Number.parseInt(raw, 10)
+    if (Number.isInteger(n) && n >= 0 && n < POLL_OPTIONS.length) return n
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function readChallengeJoined(userId: string): boolean {
+  try {
+    const raw = localStorage.getItem(localProgressKeys.communityChallengeJoined(userId))
+    return raw === '1' || raw === 'true'
+  } catch {
+    return false
+  }
+}
+
+type ProfileUnlockFieldsProps = {
+  profile: { full_name: string | null; username: string | null } | null
+  unlockError: string | null
+  unlockSaving: boolean
+  onUnlock: (displayName: string, username: string) => void
+}
+
+function ProfileUnlockFields({ profile, unlockError, unlockSaving, onUnlock }: ProfileUnlockFieldsProps) {
+  const [displayNameInput, setDisplayNameInput] = useState(profile?.full_name ?? '')
+  const [usernameInput, setUsernameInput] = useState(profile?.username ?? '')
+
+  return (
+    <div className="mt-4 space-y-3">
+      <input
+        type="text"
+        value={displayNameInput}
+        onChange={(e) => setDisplayNameInput(e.target.value.replace(/\s/g, ''))}
+        placeholder="Display Name"
+        className="min-h-12 w-full rounded-xl border border-[#232b25] bg-black/35 px-4 py-3 text-sm text-[#e9ece8] outline-none focus:border-[#2979ff]/45 focus:ring-2 focus:ring-[#2979ff]/20"
+      />
+      <input
+        type="text"
+        value={usernameInput}
+        onChange={(e) => setUsernameInput(e.target.value.replace(/\s/g, ''))}
+        placeholder="Username"
+        className="min-h-12 w-full rounded-xl border border-[#232b25] bg-black/35 px-4 py-3 text-sm text-[#e9ece8] outline-none focus:border-[#2979ff]/45 focus:ring-2 focus:ring-[#2979ff]/20"
+      />
+      {unlockError ? <p className="text-center text-xs font-medium text-red-400">{unlockError}</p> : null}
+      <button
+        type="button"
+        onClick={() => onUnlock(displayNameInput, usernameInput)}
+        disabled={unlockSaving}
+        className="min-h-12 w-full rounded-full bg-[#e9ece8] py-3 text-sm font-bold text-[#0f1412] transition hover:brightness-105 disabled:opacity-50"
+      >
+        {unlockSaving ? 'Saving...' : 'Save'}
+      </button>
+    </div>
+  )
+}
+
 type CommunityProps = {
   userId: string
   userXp: number
@@ -46,8 +107,8 @@ type CommunityProps = {
 
 export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
   const { user, profile, refreshProfile } = useAuth()
-  const [selectedOption, setSelectedOption] = useState<number | null>(null)
-  const [isJoined, setIsJoined] = useState(false)
+  const [selectedOption, setSelectedOption] = useState<number | null>(() => readPollVote(userId))
+  const [isJoined, setIsJoined] = useState(() => readChallengeJoined(userId))
   const [realRows, setRealRows] = useState<RankedProfileRow[]>([])
   const [myLiveRank, setMyLiveRank] = useState<number | null>(null)
   const [myLiveRow, setMyLiveRow] = useState<LeaderRow | null>(null)
@@ -55,13 +116,6 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
   const [lockLoading, setLockLoading] = useState(true)
   const [unlockSaving, setUnlockSaving] = useState(false)
   const [unlockError, setUnlockError] = useState<string | null>(null)
-  const [displayNameInput, setDisplayNameInput] = useState(profile?.full_name ?? '')
-  const [usernameInput, setUsernameInput] = useState(profile?.username ?? '')
-
-  useEffect(() => {
-    setDisplayNameInput(profile?.full_name ?? '')
-    setUsernameInput(profile?.username ?? '')
-  }, [profile?.full_name, profile?.username])
 
   useEffect(() => {
     let cancelled = false
@@ -80,37 +134,11 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
       setLockLoading(false)
     }
 
-    if (!userId) {
-      setProfileLocked(true)
-      setLockLoading(false)
-      return
-    }
+    if (!userId) return
 
     void loadLockState()
     return () => {
       cancelled = true
-    }
-  }, [userId])
-
-  useEffect(() => {
-    if (!userId) return
-    try {
-      const raw = localStorage.getItem(localProgressKeys.communityPoll(userId))
-      if (raw === null) return
-      const n = Number.parseInt(raw, 10)
-      if (Number.isInteger(n) && n >= 0 && n < POLL_OPTIONS.length) setSelectedOption(n)
-    } catch {
-      /* ignore */
-    }
-  }, [userId])
-
-  useEffect(() => {
-    if (!userId) return
-    try {
-      const raw = localStorage.getItem(localProgressKeys.communityChallengeJoined(userId))
-      setIsJoined(raw === '1' || raw === 'true')
-    } catch {
-      /* ignore */
     }
   }, [userId])
 
@@ -264,7 +292,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
     return { name: youDisplayName, xp: userXp, rank: myLiveRank, you: true }
   }, [showStickyMe, myLiveRank, myLiveRow, youDisplayName, userXp])
 
-  async function handleUnlockProfile() {
+  async function handleUnlockProfile(displayNameInput: string, usernameInput: string) {
     if (!user) return
     setUnlockError(null)
 
@@ -303,17 +331,17 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">NETWORK</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Community</h1>
-        <p className="mt-1 max-w-md text-sm text-gray-500">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a7b0a8]">NETWORK</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#e9ece8] sm:text-3xl">Community</h1>
+        <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">
           Leaderboard, weekly challenge, and community poll.
         </p>
       </motion.header>
 
       <StaggerPage className="mt-8 space-y-6">
         <Card title="CHALLENGE">
-          <p className="text-sm font-semibold text-white">Save $20 this week.</p>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="text-sm font-semibold text-[#e9ece8]">Save $20 this week.</p>
+          <p className="mt-2 text-sm text-[#a7b0a8]">
             Track one no-spend day. Build the habit without the noise.
           </p>
           <button
@@ -326,11 +354,11 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
             }}
             className={`mt-4 min-h-12 w-full rounded-lg py-3 text-sm font-semibold tracking-wide transition-opacity duration-200 ${
               isJoined
-                ? 'cursor-default border border-[#00FF88]/25 bg-[#00FF88]/10 text-[#00FF88]/80'
-                : 'bg-[#00FF88] text-black hover:opacity-90 active:opacity-80'
+                ? 'cursor-default border border-[#2979ff]/25 bg-[#2979ff]/10 text-[#2979ff]/80'
+                : 'bg-[#e9ece8] text-[#0f1412] hover:opacity-90 active:opacity-80'
             }`}
           >
-            {isJoined ? 'JOINED' : "I'm in"}
+            {isJoined ? 'Joined' : "I'm in"}
           </button>
         </Card>
 
@@ -341,47 +369,29 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
                 {topFiveRows.map((r) => (
                   <div key={`${r.rank}-${r.name}`} className={rowGlass}>
                     <div className="flex items-center gap-3">
-                      <span className="w-6 text-center text-sm font-semibold text-gray-500">#{r.rank}</span>
+                      <span className="w-6 text-center text-sm font-semibold text-[#a7b0a8]">#{r.rank}</span>
                       <div>
-                        <p className="text-sm font-semibold text-white">{r.name}</p>
-                        <p className="text-xs text-gray-500">XP</p>
+                        <p className="text-sm font-semibold text-[#e9ece8]">{r.name}</p>
+                        <p className="text-xs text-[#a7b0a8]">XP</p>
                       </div>
                     </div>
-                    <span className="font-mono text-sm font-semibold text-[#00FF88]">{r.xp} XP</span>
+                    <span className="font-mono text-sm font-semibold text-[#2979ff]">{r.xp} XP</span>
                   </div>
                 ))}
               </div>
-              <div className="absolute inset-0 z-30 flex items-center justify-center rounded-2xl bg-black/50 p-2 sm:p-4">
-                <div className="mx-auto w-full max-w-md rounded-2xl border border-white/15 bg-white/10 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16),0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-                  <p className="text-center text-lg font-semibold text-white">Access the Leaderboard</p>
-                  <p className="mt-2 text-center text-sm text-gray-300">
+              <div className="absolute inset-0 z-30 flex items-center justify-center rounded-2xl bg-[#121a15] p-2 sm:p-4">
+                <div className="mx-auto w-full max-w-md rounded-2xl border border-[#232b25] bg-[#1a221c] p-5">
+                  <p className="text-center text-lg font-semibold text-[#e9ece8]">Access the Leaderboard</p>
+                  <p className="mt-2 text-center text-sm text-[#a7b0a8]">
                     Choose a username and display name to see your rank and join the grind.
                   </p>
-                  <div className="mt-4 space-y-3">
-                    <input
-                      type="text"
-                      value={displayNameInput}
-                      onChange={(e) => setDisplayNameInput(e.target.value.replace(/\s/g, ''))}
-                      placeholder="Display Name"
-                      className="min-h-12 w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-[#00FF88]/45 focus:ring-2 focus:ring-[#00FF88]/20"
-                    />
-                    <input
-                      type="text"
-                      value={usernameInput}
-                      onChange={(e) => setUsernameInput(e.target.value.replace(/\s/g, ''))}
-                      placeholder="Username"
-                      className="min-h-12 w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-[#00FF88]/45 focus:ring-2 focus:ring-[#00FF88]/20"
-                    />
-                    {unlockError ? <p className="text-center text-xs font-medium text-red-400">{unlockError}</p> : null}
-                    <button
-                      type="button"
-                      onClick={handleUnlockProfile}
-                      disabled={unlockSaving}
-                      className="min-h-12 w-full rounded-xl bg-[#00FF88] py-3 text-sm font-bold text-black transition hover:brightness-105 disabled:opacity-50"
-                    >
-                      {unlockSaving ? 'Saving...' : 'Save'}
-                    </button>
-                  </div>
+                  <ProfileUnlockFields
+                    key={`${profile?.full_name ?? ''}|${profile?.username ?? ''}`}
+                    profile={profile}
+                    unlockError={unlockError}
+                    unlockSaving={unlockSaving}
+                    onUnlock={handleUnlockProfile}
+                  />
                 </div>
               </div>
             </div>
@@ -397,15 +407,15 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-6 text-center text-sm font-semibold text-gray-500">#{r.rank}</span>
+                    <span className="w-6 text-center text-sm font-semibold text-[#a7b0a8]">#{r.rank}</span>
                     <div>
-                      <p className="text-sm font-semibold text-white">
+                      <p className="text-sm font-semibold text-[#e9ece8]">
                         {r.name} {r.you ? '(you)' : ''}
                       </p>
-                      <p className="text-xs text-gray-500">XP</p>
+                      <p className="text-xs text-[#a7b0a8]">XP</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-semibold text-[#00FF88]">{r.xp} XP</span>
+                  <span className="font-mono text-sm font-semibold text-[#2979ff]">{r.xp} XP</span>
                 </div>
               ))}
 
@@ -417,11 +427,11 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
                       <div className="flex items-center gap-3">
                         <span className="w-6 text-center text-sm font-semibold text-yellow-200">#{stickyMeRow.rank}</span>
                         <div>
-                          <p className="text-sm font-semibold text-white">{stickyMeRow.name} (you)</p>
+                          <p className="text-sm font-semibold text-[#e9ece8]">{stickyMeRow.name} (you)</p>
                           <p className="text-xs text-yellow-200/80">XP</p>
                         </div>
                       </div>
-                      <span className="font-mono text-sm font-semibold text-[#00FF88]">{stickyMeRow.xp} XP</span>
+                      <span className="font-mono text-sm font-semibold text-[#2979ff]">{stickyMeRow.xp} XP</span>
                     </div>
                   ) : null}
                 </>
@@ -431,7 +441,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
         )}
 
         <Card title="POLL" subtitle="Signal check">
-          <p className="text-sm font-semibold text-white">
+          <p className="text-sm font-semibold text-[#e9ece8]">
             What&apos;s the biggest money trap right now?
           </p>
           <div className="mt-4 space-y-2">
@@ -450,16 +460,16 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
                   className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-all duration-200 ${
                     voted
                       ? isSelected
-                        ? 'cursor-default border border-[#00FF88]/55 bg-[#00FF88]/12 text-[#00FF88] shadow-[0_0_24px_rgba(0,255,136,0.12)]'
-                        : 'cursor-default border border-white/[0.07] bg-white/[0.02] text-gray-500 opacity-50'
-                      : 'border border-white/10 border-t-white/15 bg-white/5 text-gray-200 hover:bg-white/[0.08] active:scale-[0.99]'
+                        ? 'cursor-default border border-[#2979ff]/55 bg-[#2979ff]/12 text-[#2979ff]'
+                        : 'cursor-default border border-white/[0.07] bg-white/[0.02] text-[#a7b0a8] opacity-50'
+                      : 'border border-[#232b25] border-t-white/15 bg-transparent text-gray-200 hover:bg-white/[0.08] active:scale-[0.99]'
                   }`}
                 >
                   <span className="min-w-0 flex-1">{opt}</span>
                   {showResults ? (
                     <span
                       className={`shrink-0 font-mono text-sm tabular-nums ${
-                        isSelected ? 'font-semibold text-[#00FF88]' : 'text-gray-500'
+                        isSelected ? 'font-semibold text-[#2979ff]' : 'text-[#a7b0a8]'
                       }`}
                     >
                       {POLL_RESULT_PCTS[idx]}%

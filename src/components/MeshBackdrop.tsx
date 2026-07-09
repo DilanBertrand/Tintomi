@@ -1,29 +1,48 @@
-import type { CSSProperties } from 'react'
+import { useMemo } from 'react'
 
 /**
- * Shared mesh + noise background (landing + authenticated app) for a seamless transition.
+ * Shared background (landing + authenticated app): black-and-white fluid
+ * marble texture. A dark scrim sits on top so foreground text and buttons
+ * keep full contrast.
  */
+const MARBLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <filter id="flow" x="-25%" y="-25%" width="150%" height="150%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.0032 0.0058" numOctaves="3" seed="11" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="260" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur stdDeviation="0.9"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="#070908"/>
+  <g filter="url(#flow)" fill="none" stroke="#f4f6f3" stroke-linecap="round">
+    <path d="M-100,120 C300,60 700,220 1100,120 S1500,60 1750,140" stroke-width="85" opacity="0.05"/>
+    <path d="M-100,180 C350,140 650,260 1050,180 S1450,120 1750,200" stroke-width="2.5" opacity="0.32"/>
+    <path d="M-100,240 C300,300 800,160 1200,260 S1550,320 1750,240" stroke-width="1.4" opacity="0.26"/>
+    <path d="M-100,360 C250,420 750,300 1150,400 S1500,460 1750,380" stroke-width="60" opacity="0.045"/>
+    <path d="M-100,420 C400,360 700,500 1100,420 S1500,360 1750,440" stroke-width="2" opacity="0.3"/>
+    <path d="M-100,470 C350,530 850,410 1250,500 S1550,540 1750,470" stroke-width="1.2" opacity="0.22"/>
+    <path d="M-100,580 C300,520 700,660 1100,570 S1500,520 1750,600" stroke-width="95" opacity="0.05"/>
+    <path d="M-100,640 C380,700 780,560 1180,660 S1520,700 1750,620" stroke-width="2.6" opacity="0.3"/>
+    <path d="M-100,700 C320,650 720,760 1120,690 S1480,640 1750,720" stroke-width="1.3" opacity="0.24"/>
+    <path d="M-100,820 C300,880 800,740 1200,840 S1550,880 1750,800" stroke-width="70" opacity="0.04"/>
+    <path d="M-100,880 C400,820 700,940 1100,860 S1500,820 1750,900" stroke-width="2.2" opacity="0.28"/>
+    <path d="M-100,940 C350,980 850,880 1250,950 S1550,980 1750,930" stroke-width="1.5" opacity="0.2"/>
+  </g>
+</svg>`
+
 export function MeshBackdrop() {
-  const mesh: CSSProperties = {
-    backgroundImage: `
-      radial-gradient(ellipse 100% 80% at 20% 10%, rgba(34, 197, 94, 0.28) 0%, transparent 50%),
-      radial-gradient(ellipse 80% 60% at 85% 5%, rgba(59, 130, 246, 0.32) 0%, transparent 48%),
-      radial-gradient(ellipse 70% 50% at 0% 60%, rgba(16, 185, 129, 0.18) 0%, transparent 45%),
-      radial-gradient(ellipse 90% 70% at 100% 45%, rgba(37, 99, 235, 0.22) 0%, transparent 50%),
-      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(5, 150, 105, 0.2) 0%, transparent 55%),
-      radial-gradient(ellipse 50% 30% at 70% 80%, rgba(96, 165, 250, 0.12) 0%, transparent 40%)
-    `,
-  }
+  const backgroundImage = useMemo(
+    () => `url("data:image/svg+xml,${encodeURIComponent(MARBLE_SVG)}")`,
+    [],
+  )
   return (
     <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
-      <div className="absolute inset-0 bg-[#030712]" />
-      <div className="absolute inset-0 opacity-[0.92]" style={mesh} />
+      <div className="absolute inset-0 bg-[#0f1412]" />
       <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-        }}
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage }}
       />
+      <div className="absolute inset-0 bg-[#0f1412]/35" />
     </div>
   )
 }
