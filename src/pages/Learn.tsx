@@ -1,17 +1,28 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import { Flame } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card } from '../components/Card'
 import { LevelGlyph } from '../components/LevelGlyph'
 import { ProgressBar } from '../components/ProgressBar'
 import { StaggerPage } from '../components/StaggerPage'
-import { levels, XP_PER_LESSON, type Lesson } from '../data/lessons'
+import {
+  levels,
+  XP_PER_LESSON,
+  XP_PERFECT_BONUS,
+  XP_SPEED_BONUS,
+  type Lesson,
+  type QuizQuestion,
+} from '../data/lessons'
 import { themeForLevel } from '../learn-themes'
+import { localProgressKeys } from '../lib/localProgress'
+import { addLocalDays, toLocalYmd } from '../lib/streak'
 import { updateUserXP } from '../lib/updateUserXP'
 import { fadeSlideUp } from '../motion/variants'
 
 /** Total XP and completed lesson IDs persist in the browser via `App` and `lib/localProgress.ts`. */
 
 type LearnProps = {
+  userId: string
   xp: number
   onAddXp: (amount: number) => Promise<void> | void
   completedLessonIds: string[]
@@ -30,9 +41,18 @@ function isLevelUnlocked(levelIndex: number, done: Set<string>, userXp: number) 
   return userXp >= levels[levelIndex].xpToUnlock
 }
 
-type QuizPhase = 'read' | 'quiz' | 'result'
+type QuizPhase = 'read' | 'quiz' | 'result' | 'trackdone'
 
 type ShuffledOption = { text: string; originalIndex: number }
+
+/** Active quiz session: a real lesson, or a synthetic weak-spots review. */
+type QuizSession = {
+  id: string
+  title: string
+  explanation: string
+  questions: QuizQuestion[]
+  review: boolean
+}
 
 function shuffle<T>(items: T[]): T[] {
   const arr = [...items]
@@ -49,45 +69,158 @@ function shuffledOptionsForQuestion(q: { options: readonly string[] }): Shuffled
   return shuffle(paired)
 }
 
+const allQuestionsById = new Map<string, QuizQuestion>(
+  levels.flatMap((lvl) => lvl.lessons.flatMap((l) => l.questions.map((q) => [q.id, q] as const))),
+)
+
+const totalLessonCount = levels.reduce((n, lvl) => n + lvl.lessons.length, 0)
+
+function readWeakSpots(userId: string): string[] {
+  try {
+    const raw = localStorage.getItem(localProgressKeys.learnWeakSpots(userId))
+    const parsed = raw ? (JSON.parse(raw) as unknown) : []
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((id): id is string => typeof id === 'string' && allQuestionsById.has(id))
+  } catch {
+    return []
+  }
+}
+
+type LearnStreak = { streak: number; lastStreakDate: string | null }
+
+function readLearnStreak(userId: string): LearnStreak {
+  try {
+    const raw = localStorage.getItem(localProgressKeys.learnStreak(userId))
+    const parsed = raw ? (JSON.parse(raw) as Partial<LearnStreak>) : null
+    if (parsed && typeof parsed.streak === 'number') {
+      return { streak: parsed.streak, lastStreakDate: parsed.lastStreakDate ?? null }
+    }
+  } catch {
+    // fall through
+  }
+  return { streak: 0, lastStreakDate: null }
+}
+
+/** Streak counts consecutive days with at least one completed lesson. */
+function bumpLearnStreak(prev: LearnStreak, now: Date = new Date()): LearnStreak {
+  const today = toLocalYmd(now)
+  const yesterday = toLocalYmd(addLocalDays(now, -1))
+  if (prev.lastStreakDate === today) return prev
+  if (prev.lastStreakDate === yesterday) return { streak: prev.streak + 1, lastStreakDate: today }
+  return { streak: 1, lastStreakDate: today }
+}
+
+/** Days-with-a-lesson streak, showing 0 if the chain is already broken. */
+function displayStreak(s: LearnStreak, now: Date = new Date()): number {
+  if (!s.lastStreakDate) return 0
+  const today = toLocalYmd(now)
+  const yesterday = toLocalYmd(addLocalDays(now, -1))
+  if (s.lastStreakDate === today || s.lastStreakDate === yesterday) return s.streak
+  return 0
+}
+
+const SPEED_BONUS_WINDOW_MS = 5000
+const REVIEW_SESSION_SIZE = 3
+
 const levelShell =
   'rounded-xl border border-[#232b25] bg-transparent p-4 transition-all duration-300 hover:-translate-y-1 hover:border-[#232b25] '
 
-export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: LearnProps) {
+export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesson }: LearnProps) {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
 
   const done = useMemo(() => new Set(completedLessonIds), [completedLessonIds])
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null)
+  const [session, setSession] = useState<QuizSession | null>(null)
   const [phase, setPhase] = useState<QuizPhase>('read')
   const [qIndex, setQIndex] = useState(0)
   const [picked, setPicked] = useState<number | null>(null)
   const [shuffleSeed, setShuffleSeed] = useState(0)
   const [correctCount, setCorrectCount] = useState(0)
-  const scoreRef = useRef(0)
+  const [completedTrackTitle, setCompletedTrackTitle] = useState('')
+  const [weakSpots, setWeakSpots] = useState<string[]>(() => readWeakSpots(userId))
+  const [learnStreak, setLearnStreak] = useState<LearnStreak>(() => readLearnStreak(userId))
+  const [speedBonus, setSpeedBonus] = useState(0)
+  const questionShownAtRef = useRef(0)
+
+  useEffect(() => {
+    setWeakSpots(readWeakSpots(userId))
+    setLearnStreak(readLearnStreak(userId))
+  }, [userId])
+
+  const persistWeakSpots = (ids: string[]) => {
+    setWeakSpots(ids)
+    try {
+      localStorage.setItem(localProgressKeys.learnWeakSpots(userId), JSON.stringify(ids))
+    } catch {
+      // storage full/blocked: state still updates for this session
+    }
+  }
 
   const xpIntoLevel = xp % 100
   const nextLevelXp = 100
+  const streakDays = displayStreak(learnStreak)
 
   const closeLesson = () => {
-    setActiveLesson(null)
+    setSession(null)
     setPhase('read')
     setQIndex(0)
     setPicked(null)
     setCorrectCount(0)
-    scoreRef.current = 0
+    setCompletedTrackTitle('')
+    setSpeedBonus(0)
   }
 
-  const startQuiz = () => {
+  const startQuiz = (startedAt: number) => {
     setShuffleSeed((n) => n + 1)
     setPhase('quiz')
     setQIndex(0)
     setPicked(null)
     setCorrectCount(0)
-    scoreRef.current = 0
+    setSpeedBonus(0)
+    questionShownAtRef.current = startedAt
   }
 
-  const currentQ = activeLesson?.questions[qIndex]
+  const openLesson = (lesson: Lesson) => {
+    setSpeedBonus(0)
+    setSession({
+      id: lesson.id,
+      title: lesson.title,
+      explanation: lesson.explanation,
+      questions: [...lesson.questions],
+      review: false,
+    })
+    setPhase('read')
+    setQIndex(0)
+    setPicked(null)
+    setCorrectCount(0)
+  }
+
+  const openReview = (startedAt: number) => {
+    const questions = shuffle(weakSpots)
+      .slice(0, REVIEW_SESSION_SIZE)
+      .map((id) => allQuestionsById.get(id))
+      .filter((q): q is QuizQuestion => Boolean(q))
+    if (questions.length === 0) return
+    setSpeedBonus(0)
+    setSession({
+      id: 'weak-spots-review',
+      title: 'Weak spots review',
+      explanation: '',
+      questions,
+      review: true,
+    })
+    setShuffleSeed((n) => n + 1)
+    setPhase('quiz')
+    setQIndex(0)
+    setPicked(null)
+    setCorrectCount(0)
+    questionShownAtRef.current = startedAt
+  }
+
+  const questionCount = session?.questions.length ?? 0
+  const currentQ = session?.questions[qIndex]
+  const isLastQuestion = qIndex >= questionCount - 1
 
   const shuffledOptions = useMemo(() => {
     if (!currentQ) return []
@@ -95,49 +228,87 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
     return shuffledOptionsForQuestion(currentQ)
   }, [currentQ, shuffleSeed])
 
-  const onPickOption = (displayIndex: number) => {
-    if (!activeLesson || !currentQ || picked !== null) return
+  const onPickOption = (displayIndex: number, answeredAt: number) => {
+    if (!session || !currentQ || picked !== null) return
     const row = shuffledOptions[displayIndex]
     if (!row) return
     setPicked(displayIndex)
     const ok = row.originalIndex === currentQ.correctIndex
     if (ok) {
-      void updateUserXP(10)
-    }
-    const advance = () => {
-      if (ok) scoreRef.current += 1
-      const next = scoreRef.current
-      setCorrectCount(next)
-      if (qIndex >= 2) {
-        setPhase('result')
-        return
+      setCorrectCount((c) => c + 1)
+      if (answeredAt - questionShownAtRef.current <= SPEED_BONUS_WINDOW_MS) {
+        setSpeedBonus((b) => b + XP_SPEED_BONUS)
       }
-      setQIndex((v) => v + 1)
-      setPicked(null)
+      void updateUserXP(10)
+      // Answered right: this question is no longer a weak spot.
+      if (weakSpots.includes(currentQ.id)) {
+        persistWeakSpots(weakSpots.filter((id) => id !== currentQ.id))
+      }
+    } else if (!weakSpots.includes(currentQ.id)) {
+      persistWeakSpots([...weakSpots, currentQ.id])
     }
-    const delayMs = ok ? 650 : 1500
-    window.setTimeout(advance, delayMs)
   }
 
-  const finishLesson = async () => {
-    if (!activeLesson) return
-    const finalScore = scoreRef.current
-    if (finalScore < 3) {
+  const goNext = (advancedAt: number) => {
+    if (picked === null) return
+    if (isLastQuestion) {
+      setPhase('result')
+      return
+    }
+    setQIndex((v) => v + 1)
+    setPicked(null)
+    questionShownAtRef.current = advancedAt
+  }
+
+  const passed = session?.review ? true : correctCount >= 2
+  const perfect = !session?.review && questionCount > 0 && correctCount >= questionCount
+
+  const finishLesson = async (clickedAt: number) => {
+    if (!session) return
+    if (session.review) {
+      closeLesson()
+      return
+    }
+    if (!passed) {
       setShuffleSeed((n) => n + 1)
       setPhase('quiz')
       setQIndex(0)
       setPicked(null)
       setCorrectCount(0)
-      scoreRef.current = 0
+      setSpeedBonus(0)
+      questionShownAtRef.current = clickedAt
       return
     }
-    if (!done.has(activeLesson.id)) {
+    if (!done.has(session.id)) {
+      const bonus = (perfect ? XP_PERFECT_BONUS : 0) + speedBonus
       await updateUserXP(10)
-      await onAddXp(XP_PER_LESSON)
-      onCompleteLesson(activeLesson.id)
+      await onAddXp(XP_PER_LESSON + bonus)
+      onCompleteLesson(session.id)
+
+      const nextStreak = bumpLearnStreak(learnStreak)
+      setLearnStreak(nextStreak)
+      try {
+        localStorage.setItem(localProgressKeys.learnStreak(userId), JSON.stringify(nextStreak))
+      } catch {
+        // storage blocked: streak still shown this session
+      }
+
+      // Completing this lesson may finish its whole track — celebrate that.
+      const owningLevel = levels.find((lvl) => lvl.lessons.some((l) => l.id === session.id))
+      if (owningLevel) {
+        const nowDone = new Set(done)
+        nowDone.add(session.id)
+        if (owningLevel.lessons.every((l) => nowDone.has(l.id))) {
+          setCompletedTrackTitle(owningLevel.title)
+          setPhase('trackdone')
+          return
+        }
+      }
     }
     closeLesson()
   }
+
+  const earnedBonus = (perfect ? XP_PERFECT_BONUS : 0) + speedBonus
 
   return (
     <div className="overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">
@@ -156,10 +327,28 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
 
       <StaggerPage className="mt-8 space-y-6">
         <Card title="Progress" subtitle="Experience points">
-          <div className="flex items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="font-mono text-3xl font-semibold text-[#2979ff]">{xp}</p>
               <p className="text-xs text-[#a7b0a8]">Total XP</p>
+            </div>
+            <div>
+              <p className="font-mono text-3xl font-semibold text-[#e9ece8]">
+                {done.size}
+                <span className="text-base text-[#a7b0a8]"> / {totalLessonCount}</span>
+              </p>
+              <p className="text-xs text-[#a7b0a8]">Lessons done</p>
+            </div>
+            <div>
+              <p className="flex items-center gap-1.5 font-mono text-3xl font-semibold text-[#e9ece8]">
+                <Flame
+                  className={`h-6 w-6 ${streakDays > 0 ? 'text-[#2979ff]' : 'text-[#39423b]'}`}
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                {streakDays}
+              </p>
+              <p className="text-xs text-[#a7b0a8]">Day streak</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-[#a7b0a8]">Next bracket</p>
@@ -172,6 +361,24 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
             <ProgressBar value={xpIntoLevel} max={nextLevelXp} label="Progress to next 100 XP" />
           </div>
         </Card>
+
+        {weakSpots.length > 0 ? (
+          <Card title="Weak spots" subtitle="Questions you missed">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="max-w-sm text-sm text-[#a7b0a8]">
+                {weakSpots.length} question{weakSpots.length === 1 ? '' : 's'} to revisit. Answer them
+                right and they clear from this list.
+              </p>
+              <button
+                type="button"
+                onClick={(e) => openReview(e.timeStamp)}
+                className="min-h-12 shrink-0 rounded-full bg-[#e9ece8] px-6 py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
+              >
+                Review {Math.min(weakSpots.length, REVIEW_SESSION_SIZE)} now
+              </button>
+            </div>
+          </Card>
+        ) : null}
 
         <div className="space-y-4">
           {levels.map((level, idx) => {
@@ -232,12 +439,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                             disabled={disabled}
                             onClick={() => {
                               if (disabled) return
-                              scoreRef.current = 0
-                              setActiveLesson(lesson)
-                              setPhase('read')
-                              setQIndex(0)
-                              setPicked(null)
-                              setCorrectCount(0)
+                              openLesson(lesson)
                             }}
                             className={`flex min-h-12 w-full items-center justify-between rounded-lg border px-3 py-3 text-left transition-colors duration-200 ${
                               disabled
@@ -270,7 +472,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
       </StaggerPage>
 
       <AnimatePresence>
-        {activeLesson ? (
+        {session ? (
           <motion.div
             key="lesson-overlay"
             className="fixed inset-0 z-[60] flex items-end justify-center bg-black/65 p-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:items-center sm:pb-3"
@@ -296,7 +498,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a7b0a8]">
                         Lesson
                       </p>
-                      <h3 className="text-xl font-semibold text-[#e9ece8] sm:text-2xl">{activeLesson.title}</h3>
+                      <h3 className="text-xl font-semibold text-[#e9ece8] sm:text-2xl">{session.title}</h3>
                     </div>
                     <button
                       type="button"
@@ -306,10 +508,10 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                       Close
                     </button>
                   </div>
-                  <p className="mt-4 text-sm leading-relaxed text-[#a7b0a8]">{activeLesson.explanation}</p>
+                  <p className="mt-4 text-sm leading-relaxed text-[#a7b0a8]">{session.explanation}</p>
                   <button
                     type="button"
-                    onClick={startQuiz}
+                    onClick={(e) => startQuiz(e.timeStamp)}
                     className="mt-6 min-h-12 w-full rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity duration-200 hover:opacity-90"
                   >
                     Start quiz
@@ -321,7 +523,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                 <>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-medium text-[#a7b0a8]">
-                      Q {qIndex + 1} / 3
+                      {session.review ? 'Review · ' : ''}Q {qIndex + 1} / {questionCount}
                     </p>
                     <button
                       type="button"
@@ -352,7 +554,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                           key={`${currentQ.id}-${idx}-${opt.originalIndex}`}
                           type="button"
                           disabled={show}
-                          onClick={() => onPickOption(idx)}
+                          onClick={(e) => onPickOption(idx, e.timeStamp)}
                           animate={
                             userMissed
                               ? { x: [0, -6, 6, -5, 5, -3, 3, 0] }
@@ -366,28 +568,77 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                       )
                     })}
                   </div>
+                  <AnimatePresence>
+                    {picked !== null ? (
+                      <motion.div
+                        key={`why-${currentQ.id}`}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                      >
+                        <div className="mt-4 rounded-lg border-l-[3px] border-[#2979ff] bg-[#2979ff]/8 px-3 py-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
+                            Why
+                          </p>
+                          <p className="mt-1 text-sm leading-relaxed text-[#e9ece8]">{currentQ.why}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => goNext(e.timeStamp)}
+                          className="mt-4 min-h-12 w-full rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
+                        >
+                          {isLastQuestion ? 'See results' : 'Next question'}
+                        </button>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
                 </>
               ) : null}
 
               {phase === 'result' ? (
                 <>
-                  <h3 className="text-xl font-semibold text-[#e9ece8]">Score check</h3>
+                  <h3 className="text-xl font-semibold text-[#e9ece8]">
+                    {session.review ? 'Review done' : 'Score check'}
+                  </h3>
                   <p className="mt-2 text-sm text-[#a7b0a8]">
-                    You got <span className="font-mono font-semibold text-[#2979ff]">{correctCount}</span> / 3
-                    correct.
+                    You got <span className="font-mono font-semibold text-[#2979ff]">{correctCount}</span> /{' '}
+                    {questionCount} correct.
                   </p>
-                  {correctCount >= 3 ? (
-                    <p className="mt-2 text-sm text-[#e9ece8]">+{XP_PER_LESSON} XP unlocked.</p>
+                  {session.review ? (
+                    <p className="mt-2 text-sm text-[#a7b0a8]">
+                      Cleared questions are off your weak spots list. Missed ones stay for next time.
+                    </p>
+                  ) : passed ? (
+                    <>
+                      {done.has(session.id) ? (
+                        <p className="mt-2 text-sm text-[#a7b0a8]">Already completed — no repeat XP, but reps count.</p>
+                      ) : (
+                        <>
+                          <p className="mt-2 text-sm text-[#e9ece8]">+{XP_PER_LESSON} XP unlocked.</p>
+                          {earnedBonus > 0 ? (
+                            <p className="mt-1 text-sm text-[#2979ff]">
+                              +{earnedBonus} bonus XP
+                              {perfect ? ' (perfect score' : ' ('}
+                              {perfect && speedBonus > 0 ? ' + ' : ''}
+                              {speedBonus > 0 ? 'fast answers' : ''})
+                            </p>
+                          ) : null}
+                        </>
+                      )}
+                    </>
                   ) : (
-                    <p className="mt-2 text-sm text-[#a7b0a8]">Try again to earn XP.</p>
+                    <p className="mt-2 text-sm text-[#a7b0a8]">
+                      You need 2 of {questionCount} to pass. Run it back.
+                    </p>
                   )}
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                     <button
                       type="button"
-                      onClick={finishLesson}
+                      onClick={(e) => void finishLesson(e.timeStamp)}
                       className="min-h-12 flex-1 rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
                     >
-                      {correctCount >= 3 ? 'Claim XP' : 'Retry quiz'}
+                      {session.review ? 'Done' : passed ? 'Claim XP' : 'Retry quiz'}
                     </button>
                     <button
                       type="button"
@@ -397,6 +648,26 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
                       Done
                     </button>
                   </div>
+                </>
+              ) : null}
+
+              {phase === 'trackdone' ? (
+                <>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
+                    Track complete
+                  </p>
+                  <h3 className="mt-1 text-2xl font-semibold text-[#e9ece8]">{completedTrackTitle}: done.</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[#a7b0a8]">
+                    Every lesson in this track is finished. The next track is unlocked — keep the streak
+                    alive.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={closeLesson}
+                    className="mt-6 min-h-12 w-full rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
+                  >
+                    Keep going
+                  </button>
                 </>
               ) : null}
             </motion.div>

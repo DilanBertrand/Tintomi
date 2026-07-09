@@ -17,7 +17,8 @@ function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function PulsingGlow(_props: { accent: 'green' | 'blue' | 'violet' | 'amber'; className?: string }) {
+function PulsingGlow(props: { accent: 'green' | 'blue' | 'violet' | 'amber'; className?: string }) {
+  void props
   return null
 }
 

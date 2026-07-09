@@ -376,6 +376,7 @@ export default function App() {
             {tab === 'home' ? <Home onNavigate={goToTab} /> : null}
             {tab === 'learn' ? (
               <Learn
+                userId={user.id}
                 xp={xp}
                 onAddXp={addXp}
                 completedLessonIds={completedLessonIds}
