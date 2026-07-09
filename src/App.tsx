@@ -360,7 +360,7 @@ export default function App() {
   return (
     <div className="relative flex min-h-dvh flex-col text-gray-100">
       <MeshBackdrop />
-      <div className="relative z-10 mx-auto w-full max-w-4xl flex-1 px-4 pb-28 pt-5 sm:px-6 lg:px-10">
+      <div className="relative z-10 mx-auto w-full max-w-4xl flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10">
         <header className="relative mb-4 flex min-h-[2.75rem] w-full items-center justify-center pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:min-h-[3rem]">
           <p className="tm-chrome-wordmark-app max-w-[calc(100%-2rem)] text-center sm:max-w-none">TINTOMI</p>
         </header>

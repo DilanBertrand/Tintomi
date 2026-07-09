@@ -140,7 +140,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
   }
 
   return (
-    <div className="overflow-y-auto pb-20">
+    <div className="overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <motion.header
         className="px-1"
         initial={{ opacity: 0, y: 16 }}
@@ -273,7 +273,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
         {activeLesson ? (
           <motion.div
             key="lesson-overlay"
-            className="fixed inset-0 z-[60] flex items-end justify-center bg-black/65 p-3 sm:items-center"
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-black/65 p-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:items-center sm:pb-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -282,7 +282,7 @@ export function Learn({ xp, onAddXp, completedLessonIds, onCompleteLesson }: Lea
             role="presentation"
           >
             <motion.div
-              className="max-h-[85dvh] w-full max-w-lg cursor-default overflow-y-auto rounded-xl border-x border-b border-[#232b25] border-t border-t-white/25 bg-[#1a221c] p-4"
+              className="max-h-[calc(100dvh-6rem-env(safe-area-inset-bottom))] w-full max-w-lg cursor-default overflow-y-auto rounded-xl border-x border-b border-[#232b25] border-t border-t-white/25 bg-[#1a221c] p-4 sm:max-h-[85dvh]"
               initial={{ opacity: 0, y: 28, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.98 }}

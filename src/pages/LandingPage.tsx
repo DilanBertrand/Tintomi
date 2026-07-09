@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, BookOpen, ChevronDown, Flame, TrendingUp, Users, Zap } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, Flame, TrendingUp, Users, Zap } from 'lucide-react'
 import { MeshBackdrop } from '../components/MeshBackdrop'
 import { Sparkline } from '../components/Sparkline'
 
@@ -80,9 +80,45 @@ const featureIconClass = 'h-10 w-10 shrink-0'
 const featureIconStroke = 1.75
 const featureCardHeadline = 'tm-serif text-2xl text-[#e9ece8]'
 
+function WaitlistView({ onBack }: { onBack: () => void }) {
+  const [joined, setJoined] = useState(false)
+
+  return (
+    <div className="relative flex min-h-dvh flex-col items-center justify-center px-4 text-center">
+      <MeshBackdrop />
+      <button
+        type="button"
+        onClick={onBack}
+        className={`${head} absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-10 flex items-center gap-2 text-sm text-[#a7b0a8] transition hover:text-[#e9ece8] sm:left-6 sm:top-6`}
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        Back
+      </button>
+      <div className="relative z-10 flex flex-col items-center">
+        <p className="tm-chrome-wordmark tm-chrome-wordmark-hero">TINTOMI</p>
+        <h1 className="tm-serif relative z-10 mx-auto mt-6 max-w-full px-3 text-center text-[clamp(2rem,7vw,4.5rem)] leading-[1.1] text-[#e9ece8]">
+          Waitlist
+        </h1>
+        <p className="relative z-10 mx-auto mt-6 max-w-md text-base leading-relaxed text-[#a7b0a8] sm:text-[1.125rem]">
+          The app is not out yet. Get on the list and we will let you know the moment it is.
+        </p>
+        <button
+          type="button"
+          onClick={() => setJoined(true)}
+          disabled={joined}
+          className={`${head} relative z-10 mt-8 flex w-full max-w-[min(100%,20rem)] cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-full bg-[#e9ece8] px-8 py-4 text-base tracking-tight text-[#0f1412] transition-transform hover:scale-[1.03] active:scale-[0.99] disabled:cursor-default disabled:hover:scale-100 sm:px-12 sm:py-5 sm:text-lg`}
+        >
+          {joined ? 'Waitlist joined' : 'Join the waitlist'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function LandingPage({ onGoToSignUp }: LandingPageProps) {
   const go = useCallback((id: string) => () => scrollToId(id), [])
   const [showHeroScrollCue, setShowHeroScrollCue] = useState(true)
+  const [showWaitlist, setShowWaitlist] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setShowHeroScrollCue(window.scrollY <= 100)
@@ -90,6 +126,10 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  if (showWaitlist) {
+    return <WaitlistView onBack={() => setShowWaitlist(false)} />
+  }
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden text-[#e9ece8]">
@@ -121,7 +161,15 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
           >
             TINTOMI
           </button>
-          <div className="flex min-w-0 justify-end justify-self-end">
+          <div className="flex min-w-0 items-center justify-end justify-self-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowWaitlist(true)}
+              className={`${head} inline-flex shrink-0 items-center justify-center rounded-full bg-[#e9ece8] px-2.5 py-2 text-[10px] tracking-wide text-[#0f1412] transition hover:brightness-95 min-[400px]:px-3 min-[400px]:text-xs sm:px-5 sm:py-2.5 sm:text-sm`}
+            >
+              <span className="hidden min-[400px]:inline">Join the waitlist for the app</span>
+              <span className="min-[400px]:hidden">Waitlist</span>
+            </button>
             <a
               href="/signup"
               onClick={(e) => {

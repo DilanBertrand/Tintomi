@@ -56,7 +56,9 @@ export function Navbar({ active, onChange, profileTabLabel }: NavbarProps) {
                   isActive ? 'text-[#e9ece8]' : 'text-[#a7b0a8]'
                 }`}
               >
-                {tabLabel}
+                {/* Dynamic profile label truncates on narrow screens; keep it static there */}
+                <span className="md:hidden">{item.label}</span>
+                <span className="hidden md:inline">{tabLabel}</span>
               </span>
             </motion.button>
           )
