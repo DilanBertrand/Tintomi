@@ -75,7 +75,7 @@ function initialAuthGateView(): AuthGateView {
 }
 
 export default function App() {
-  const { user, profile, loading: authLoading } = useAuth()
+  const { user, profile, loading: authLoading, authLinkError, clearAuthLinkError } = useAuth()
   const [authGateView, setAuthGateView] = useState<AuthGateView>(initialAuthGateView)
   const [tab, setTab] = useState<TabId>('home')
   const [xp, setXp] = useState(0)
@@ -329,6 +329,23 @@ export default function App() {
         <p className="text-sm font-semibold uppercase tracking-wide text-[#a7b0a8]">Loading...</p>
       </div>
     )
+  }
+
+  if (authLinkError) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#0f1412] px-6 text-center text-gray-100">
+        <p className="max-w-md text-sm font-medium text-[#e9ece8]" role="alert">
+          {authLinkError}
+        </p>
+        <button
+          type="button"
+          onClick={clearAuthLinkError}
+          className="rounded-full bg-[#e9ece8] px-5 py-2 text-sm font-semibold text-[#0f1412] transition hover:brightness-95"
+          >
+        Continue
+        </button>
+        </div>
+      )
   }
 
   if (!isLoggedIn) {
