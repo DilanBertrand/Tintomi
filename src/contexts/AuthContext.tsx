@@ -44,6 +44,14 @@ function logAuthError(scope: string, error: AuthError | Error): void {
   })
 }
 
+const CROSS_BROWSER_LINK_MESSAGE =
+    'This confirmation link needs to be opened in the same browser you used to sign up. Please go back to that browser and click the link there, or request a new confirmation email and open it from that same browser.'
+
+function isPkceVerifierMismatch(error: AuthError | Error): boolean {
+    const msg = (error.message ?? '').toLowerCase()
+    return msg.includes('code verifier') || msg.includes('code challenge')
+}
+
 export type SignUpResult =
   | { error: string; code?: string; needsEmailConfirmation?: undefined }
   | { error: null; needsEmailConfirmation?: boolean }
@@ -53,6 +61,8 @@ type AuthContextValue = {
   session: Session | null
   profile: ProfileRow | null
   loading: boolean
+  authLinkError: string | null
+  clearAuthLinkError: () => void
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signUp: (email: string, password: string) => Promise<SignUpResult>
   signOut: () => Promise<void>
@@ -66,16 +76,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<ProfileRow | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authLinkError, setAuthLinkError] = useState<string | null>(null)
+
+  const clearAuthLinkError = useCallback(() => setAuthLinkError(null), [])
 
   useEffect(() => {
     let cancelled = false
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    const init = async () => {
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+        const url = new URL(window.location.href)
+        url.searchParams.delete('code')
+        window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+
+        if (error) {
+          logAuthError('exchangeCodeForSession', error)
+          if (!cancelled) {
+            setAuthLinkError(isPkceVerifierMismatch(error) ? CROSS_BROWSER_LINK_MESSAGE : formatAuthError(error))
+          }
+        }
+      }
+
+    const { data: { session: s } } = await supabase.auth.getSession()
       if (cancelled) return
       setSession(s)
       setUser(s?.user ?? null)
       setLoading(false)
-    })
+    }
+
+    void init()
 
     const {
       data: { subscription },
@@ -158,12 +192,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       profile,
       loading,
+      authLinkError,
+      clearAuthLinkError,
       signIn,
       signUp,
       signOut,
       refreshProfile,
     }),
-    [user, session, profile, loading, signIn, signUp, signOut, refreshProfile],
+    [user, session, profile, loading, authLinkError, clearAuthLinkError, signIn, signUp, signOut, refreshProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
