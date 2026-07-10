@@ -26,3 +26,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 })
+
+/**
+ * Base URL Supabase should redirect back to after an email confirmation link
+ * is clicked. Set VITE_SITE_URL in production (e.g. https://www.tintomi.com)
+ * so confirmation links never point at localhost. Falls back to the current
+ * origin for local dev.
+ *
+ * NOTE: this value must also be added to the Supabase dashboard under
+ * Authentication -> URL Configuration (Site URL + Redirect URLs allow-list).
+ * If it isn't allow-listed there, Supabase ignores emailRedirectTo and uses
+ * the dashboard's Site URL instead.
+ */
+export function getEmailRedirectUrl(): string {
+  const configured = import.meta.env.VITE_SITE_URL?.trim()
+  if (configured) return configured.replace(/\/$/, '')
+  if (typeof window !== 'undefined') return window.location.origin
+  return supabaseUrl
+}

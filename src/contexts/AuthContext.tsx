@@ -1,7 +1,7 @@
 import type { AuthError, Session, User } from '@supabase/supabase-js'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { loadProfileWithStreakSync } from '../lib/profiles'
-import { supabase } from '../lib/supabase'
+import { getEmailRedirectUrl, supabase } from '../lib/supabase'
 import type { ProfileRow } from '../types/profile'
 
 function isNetworkAuthError(error: AuthError | Error): boolean {
@@ -130,7 +130,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signUp({ email: email.trim(), password })
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo: getEmailRedirectUrl() },
+      })
       if (error) {
         logAuthError('signUp', error)
         return { error: formatAuthError(error), code: error.code }

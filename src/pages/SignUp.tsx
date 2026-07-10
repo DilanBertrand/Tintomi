@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { MeshBackdrop } from '../components/MeshBackdrop'
 import { profileExistsForEmail } from '../lib/profiles'
-import { supabase } from '../lib/supabase'
+import { getEmailRedirectUrl, supabase } from '../lib/supabase'
 
 const head = 'font-bold tracking-tight'
 
@@ -111,6 +111,7 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
     const { error: resendErr } = await supabase.auth.resend({
       type: 'signup',
       email: resendEmail,
+      options: { emailRedirectTo: getEmailRedirectUrl() },
     })
     setResendSending(false)
     if (resendErr) {
