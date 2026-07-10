@@ -23,7 +23,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
+    // The PKCE code/verifier exchange is performed manually in AuthContext
+    // (see the mount effect in AuthProvider) so we can detect a failed
+    // exchange -- e.g. the confirmation link was opened in a different
+    // browser than the one holding the code_verifier -- and show the user a
+    // clear message instead of failing silently.
+    detectSessionInUrl: false,
   },
 })
 
