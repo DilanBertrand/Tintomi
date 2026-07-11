@@ -46,6 +46,7 @@ function mapProfile(row: Record<string, unknown>): ProfileRow {
     avatar_url: (row.avatar_url as string) ?? null,
     login_streak: typeof row.login_streak === 'number' ? row.login_streak : Number(row.login_streak) || 1,
     last_streak_date: (row.last_streak_date as string) ?? null,
+    is_pro: row.is_pro === true,
     updated_at: String(row.updated_at ?? ''),
   }
 }

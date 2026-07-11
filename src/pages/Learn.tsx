@@ -15,6 +15,8 @@ import {
   type QuizQuestion,
 } from '../data/lessons'
 import { storyLessons, XP_PER_STORY, type StoryLesson } from '../data/stories'
+import { UpgradeCard } from '../components/UpgradeCard'
+import { Crown } from 'lucide-react'
 import { themeForLevel } from '../learn-themes'
 import { localProgressKeys } from '../lib/localProgress'
 import { addLocalDays, toLocalYmd } from '../lib/streak'
@@ -29,6 +31,7 @@ type LearnProps = {
   onAddXp: (amount: number) => Promise<void> | void
   completedLessonIds: string[]
   onCompleteLesson: (lessonId: string) => void
+  isPro: boolean
 }
 
 function isLevelComplete(levelIndex: number, done: Set<string>) {
@@ -140,7 +143,14 @@ function readCompletedStories(userId: string): string[] {
 const levelShell =
   'rounded-xl border border-[#232b25] bg-transparent p-4 transition-all duration-300 hover:-translate-y-1 hover:border-[#232b25] '
 
-export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesson }: LearnProps) {
+export function Learn({
+  userId,
+  xp,
+  onAddXp,
+  completedLessonIds,
+  onCompleteLesson,
+  isPro,
+}: LearnProps) {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
@@ -178,6 +188,7 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
   const finishStory = async () => {
     if (!story) return
     const firstTime = !storiesDone.includes(story.id)
+    let earned = 0
     if (firstTime) {
       const next = [...storiesDone, story.id]
       setStoriesDone(next)
@@ -186,8 +197,9 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
       } catch {
         // storage full/blocked: state still updates for this session
       }
-      await updateUserXP(XP_PER_STORY)
-      await onAddXp(XP_PER_STORY)
+      earned = XP_PER_STORY * (isPro ? 2 : 1)
+      await updateUserXP(earned)
+      await onAddXp(earned)
 
       const nextStreak = bumpLearnStreak(learnStreak)
       setLearnStreak(nextStreak)
@@ -197,7 +209,7 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
         // storage full/blocked: state still updates for this session
       }
     }
-    setStoryReward(firstTime ? XP_PER_STORY : 0)
+    setStoryReward(earned)
   }
 
   const persistWeakSpots = (ids: string[]) => {
@@ -337,8 +349,9 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
     }
     if (!done.has(session.id)) {
       const bonus = (perfect ? XP_PERFECT_BONUS : 0) + speedBonus
-      await updateUserXP(10)
-      await onAddXp(XP_PER_LESSON + bonus)
+      const mult = isPro ? 2 : 1
+      await updateUserXP(10 * mult)
+      await onAddXp((XP_PER_LESSON + bonus) * mult)
       onCompleteLesson(session.id)
 
       const nextStreak = bumpLearnStreak(learnStreak)
@@ -404,11 +417,25 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
             </div>
             <div>
               <p className="flex items-center gap-1.5 font-mono text-3xl font-semibold text-[#e9ece8]">
-                <Flame
-                  className={`h-6 w-6 ${streakDays > 0 ? 'text-[#2979ff]' : 'text-[#39423b]'}`}
-                  strokeWidth={2}
-                  aria-hidden
-                />
+                {isPro ? (
+                  <motion.span
+                    animate={{ scale: [1, 1.18, 1], filter: [
+                      'drop-shadow(0 0 0px #e5c76b)',
+                      'drop-shadow(0 0 7px #e5c76b)',
+                      'drop-shadow(0 0 0px #e5c76b)',
+                    ] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                    className="inline-flex"
+                  >
+                    <Flame className="h-6 w-6 text-[#e5c76b]" strokeWidth={2} aria-hidden />
+                  </motion.span>
+                ) : (
+                  <Flame
+                    className={`h-6 w-6 ${streakDays > 0 ? 'text-[#2979ff]' : 'text-[#39423b]'}`}
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                )}
                 {streakDays}
               </p>
               <p className="text-xs text-[#a7b0a8]">Day streak</p>
@@ -448,31 +475,47 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           </button>
         </div>
 
+        {!isPro ? <UpgradeCard /> : null}
+
         {tab === 'lessons' ? (
           <div className="space-y-4">
-            {storyLessons.map((s) => {
+            {storyLessons.map((s, idx) => {
               const read = storiesDone.includes(s.id)
+              const proLocked = !isPro && idx > 0
               return (
                 <div key={s.id} className={levelShell}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
-                        {s.minutes} min read · +{XP_PER_STORY} XP{read ? ' · done' : ''}
+                        {proLocked ? (
+                          <span className="text-[#e5c76b]">Pro lesson</span>
+                        ) : (
+                          <>
+                            {s.minutes} min read · +{XP_PER_STORY} XP{read ? ' · done' : ''}
+                          </>
+                        )}
                       </p>
                       <h3 className="mt-1 text-lg font-semibold text-[#e9ece8]">{s.title}</h3>
                       <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">{s.tagline}</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openStory(s)}
-                      className={`min-h-12 shrink-0 rounded-full px-6 py-3 text-sm font-semibold transition-opacity duration-200 hover:opacity-90 ${
-                        read
-                          ? 'border border-[#232b25] bg-transparent text-[#e9ece8]'
-                          : 'bg-[#e9ece8] text-[#0f1412]'
-                      }`}
-                    >
-                      {read ? 'Read again' : 'Read lesson'}
-                    </button>
+                    {proLocked ? (
+                      <span className="flex min-h-12 shrink-0 items-center gap-1.5 rounded-full border border-[#c9a227]/40 px-5 py-3 text-sm font-semibold text-[#e5c76b]">
+                        <Crown className="h-4 w-4" strokeWidth={2} aria-hidden />
+                        Pro
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openStory(s)}
+                        className={`min-h-12 shrink-0 rounded-full px-6 py-3 text-sm font-semibold transition-opacity duration-200 hover:opacity-90 ${
+                          read
+                            ? 'border border-[#232b25] bg-transparent text-[#e9ece8]'
+                            : 'bg-[#e9ece8] text-[#0f1412]'
+                        }`}
+                      >
+                        {read ? 'Read again' : 'Read lesson'}
+                      </button>
+                    )}
                   </div>
                 </div>
               )
@@ -502,6 +545,7 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           {levels.map((level, idx) => {
             const unlocked = isLevelUnlocked(idx, done, xp)
             const complete = isLevelComplete(idx, done)
+            const proLocked = !isPro && idx > 0
             const theme = themeForLevel(level.id)
             return (
               <motion.div
@@ -530,26 +574,39 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
                         </p>
                         <h2 className="text-lg font-semibold text-[#e9ece8] sm:text-xl">{level.title}</h2>
                         <p className="mt-1 text-xs text-[#a7b0a8]">
-                          Unlock XP: {level.xpToUnlock}
-                          {!unlocked ? ' · locked' : complete ? ' · complete' : ' · in progress'}
+                          {proLocked ? (
+                            <span className="text-[#e5c76b]">Pro track · upgrade to unlock</span>
+                          ) : (
+                            <>
+                              Unlock XP: {level.xpToUnlock}
+                              {!unlocked ? ' · locked' : complete ? ' · complete' : ' · in progress'}
+                            </>
+                          )}
                         </p>
                       </div>
-                      <span
-                        className="shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide"
-                        style={{
-                          background: complete ? theme.accentSoft : unlocked ? theme.accentSoft : undefined,
-                          color: complete || unlocked ? theme.accent : undefined,
-                          border: !complete && !unlocked ? '1px solid rgba(255,255,255,0.08)' : undefined,
-                        }}
-                      >
-                        {complete ? 'Done' : unlocked ? 'Open' : 'Locked'}
-                      </span>
+                      {proLocked ? (
+                        <span className="flex shrink-0 items-center gap-1 rounded-md border border-[#c9a227]/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#e5c76b]">
+                          <Crown className="h-3 w-3" strokeWidth={2} aria-hidden />
+                          Pro
+                        </span>
+                      ) : (
+                        <span
+                          className="shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide"
+                          style={{
+                            background: complete ? theme.accentSoft : unlocked ? theme.accentSoft : undefined,
+                            color: complete || unlocked ? theme.accent : undefined,
+                            border: !complete && !unlocked ? '1px solid rgba(255,255,255,0.08)' : undefined,
+                          }}
+                        >
+                          {complete ? 'Done' : unlocked ? 'Open' : 'Locked'}
+                        </span>
+                      )}
                     </div>
 
                     <div className="mt-4 space-y-2">
                       {level.lessons.map((lesson) => {
                         const lessonDone = done.has(lesson.id)
-                        const disabled = !unlocked
+                        const disabled = !unlocked || proLocked
                         return (
                           <button
                             key={lesson.id}

@@ -6,5 +6,6 @@ export type ProfileRow = {
   avatar_url: string | null
   login_streak: number
   last_streak_date: string | null
+  is_pro: boolean
   updated_at: string
 }
