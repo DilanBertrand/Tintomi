@@ -14,6 +14,7 @@ import {
   type Lesson,
   type QuizQuestion,
 } from '../data/lessons'
+import { storyLessons, type StoryLesson } from '../data/stories'
 import { themeForLevel } from '../learn-themes'
 import { localProgressKeys } from '../lib/localProgress'
 import { addLocalDays, toLocalYmd } from '../lib/streak'
@@ -123,6 +124,19 @@ function displayStreak(s: LearnStreak, now: Date = new Date()): number {
 const SPEED_BONUS_WINDOW_MS = 5000
 const REVIEW_SESSION_SIZE = 3
 
+function readCompletedStories(userId: string): string[] {
+  try {
+    const raw = localStorage.getItem(localProgressKeys.learnCompletedStories(userId))
+    if (raw !== null) {
+      const parsed: unknown = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed.filter((v): v is string => typeof v === 'string')
+    }
+  } catch {
+    // fall through
+  }
+  return []
+}
+
 const levelShell =
   'rounded-xl border border-[#232b25] bg-transparent p-4 transition-all duration-300 hover:-translate-y-1 hover:border-[#232b25] '
 
@@ -142,12 +156,35 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
   const [weakSpots, setWeakSpots] = useState<string[]>(() => readWeakSpots(userId))
   const [learnStreak, setLearnStreak] = useState<LearnStreak>(() => readLearnStreak(userId))
   const [speedBonus, setSpeedBonus] = useState(0)
+  const [tab, setTab] = useState<'quizzes' | 'lessons'>('quizzes')
+  const [storiesDone, setStoriesDone] = useState<string[]>(() => readCompletedStories(userId))
+  const [story, setStory] = useState<StoryLesson | null>(null)
+  const [storyPage, setStoryPage] = useState(0)
   const questionShownAtRef = useRef(0)
 
   useEffect(() => {
     setWeakSpots(readWeakSpots(userId))
     setLearnStreak(readLearnStreak(userId))
+    setStoriesDone(readCompletedStories(userId))
   }, [userId])
+
+  const openStory = (s: StoryLesson) => {
+    setStory(s)
+    setStoryPage(0)
+  }
+
+  const finishStory = () => {
+    if (story && !storiesDone.includes(story.id)) {
+      const next = [...storiesDone, story.id]
+      setStoriesDone(next)
+      try {
+        localStorage.setItem(localProgressKeys.learnCompletedStories(userId), JSON.stringify(next))
+      } catch {
+        // storage full/blocked: state still updates for this session
+      }
+    }
+    setStory(null)
+  }
 
   const persistWeakSpots = (ids: string[]) => {
     setWeakSpots(ids)
@@ -342,6 +379,13 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
                 {done.size}
                 <span className="text-base text-[#a7b0a8]"> / {totalLessonCount}</span>
               </p>
+              <p className="text-xs text-[#a7b0a8]">Quizzes done</p>
+            </div>
+            <div>
+              <p className="font-mono text-3xl font-semibold text-[#e9ece8]">
+                {storiesDone.length}
+                <span className="text-base text-[#a7b0a8]"> / {storyLessons.length}</span>
+              </p>
               <p className="text-xs text-[#a7b0a8]">Lessons done</p>
             </div>
             <div>
@@ -367,7 +411,62 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           </div>
         </Card>
 
-        {weakSpots.length > 0 ? (
+        <IdeaSubmission />
+
+        <div className="flex w-fit rounded-full border border-[#232b25] bg-[#121a15] p-1">
+          <button
+            type="button"
+            onClick={() => setTab('quizzes')}
+            className={`min-h-10 rounded-full px-5 py-2 text-sm font-semibold transition-colors duration-200 ${
+              tab === 'quizzes' ? 'bg-[#e9ece8] text-[#0f1412]' : 'text-[#a7b0a8] hover:text-[#e9ece8]'
+            }`}
+          >
+            Quizzes
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('lessons')}
+            className={`min-h-10 rounded-full px-5 py-2 text-sm font-semibold transition-colors duration-200 ${
+              tab === 'lessons' ? 'bg-[#e9ece8] text-[#0f1412]' : 'text-[#a7b0a8] hover:text-[#e9ece8]'
+            }`}
+          >
+            Lessons
+          </button>
+        </div>
+
+        {tab === 'lessons' ? (
+          <div className="space-y-4">
+            {storyLessons.map((s) => {
+              const read = storiesDone.includes(s.id)
+              return (
+                <div key={s.id} className={levelShell}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
+                        {s.minutes} min read{read ? ' · done' : ''}
+                      </p>
+                      <h3 className="mt-1 text-lg font-semibold text-[#e9ece8]">{s.title}</h3>
+                      <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">{s.tagline}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openStory(s)}
+                      className={`min-h-12 shrink-0 rounded-full px-6 py-3 text-sm font-semibold transition-opacity duration-200 hover:opacity-90 ${
+                        read
+                          ? 'border border-[#232b25] bg-transparent text-[#e9ece8]'
+                          : 'bg-[#e9ece8] text-[#0f1412]'
+                      }`}
+                    >
+                      {read ? 'Read again' : 'Read lesson'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : null}
+
+        {tab === 'quizzes' && weakSpots.length > 0 ? (
           <Card title="Weak spots" subtitle="Questions you missed">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="max-w-sm text-sm text-[#a7b0a8]">
@@ -385,9 +484,7 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           </Card>
         ) : null}
 
-        <IdeaSubmission />
-
-        <div className="space-y-4">
+        <div className={tab === 'quizzes' ? 'space-y-4' : 'hidden'}>
           {levels.map((level, idx) => {
             const unlocked = isLevelUnlocked(idx, done, xp)
             const complete = isLevelComplete(idx, done)
@@ -477,6 +574,97 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           })}
         </div>
       </StaggerPage>
+
+      <AnimatePresence>
+        {story ? (
+          <motion.div
+            key="story-overlay"
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-black/65 p-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:items-center sm:pb-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={() => setStory(null)}
+            role="presentation"
+          >
+            <motion.div
+              className="max-h-[calc(100dvh-6rem-env(safe-area-inset-bottom))] w-full max-w-lg cursor-default overflow-y-auto rounded-xl border-x border-b border-[#232b25] border-t border-t-white/25 bg-[#1a221c] p-4 sm:max-h-[85dvh]"
+              initial={{ opacity: 0, y: 28, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a7b0a8]">
+                    Lesson · page {storyPage + 1} of {story.pages.length}
+                  </p>
+                  <h3 className="text-xl font-semibold text-[#e9ece8] sm:text-2xl">{story.title}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStory(null)}
+                  className="min-h-12 rounded-lg border border-[#232b25] bg-transparent px-3 py-2 text-sm font-medium text-[#e9ece8] transition-colors hover:bg-[#1a221c]"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="mt-3 flex gap-1.5">
+                {story.pages.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-1 flex-1 rounded-full ${i <= storyPage ? 'bg-[#2979ff]' : 'bg-[#232b25]'}`}
+                  />
+                ))}
+              </div>
+
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.p
+                  key={storyPage}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.2 }}
+                  className="mt-4 min-h-32 text-sm leading-relaxed text-[#e9ece8]"
+                >
+                  {story.pages[storyPage]}
+                </motion.p>
+              </AnimatePresence>
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                {storyPage > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setStoryPage(storyPage - 1)}
+                    className="min-h-12 rounded-lg border border-[#232b25] bg-transparent px-4 py-3 text-sm font-medium text-[#e9ece8] transition-colors hover:bg-[#1a221c]"
+                  >
+                    Back
+                  </button>
+                ) : null}
+                {storyPage < story.pages.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setStoryPage(storyPage + 1)}
+                    className="min-h-12 flex-1 rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={finishStory}
+                    className="min-h-12 flex-1 rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
+                  >
+                    Finish lesson
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <AnimatePresence>
         {session ? (
