@@ -66,7 +66,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const forward = await fetch('https://api.web3forms.com/submit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; Tintomi-Server/1.0; +https://www.tintomi.com)',
+      },
       body: JSON.stringify({
         access_key: accessKey,
         subject: 'New lesson/project idea from Tintomi',
