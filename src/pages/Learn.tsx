@@ -331,6 +331,8 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
       </motion.header>
 
       <StaggerPage className="mt-8 space-y-6">
+        <IdeaSubmission />
+
         <Card title="Progress" subtitle="Experience points">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -474,8 +476,6 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
             )
           })}
         </div>
-
-        <IdeaSubmission />
       </StaggerPage>
 
       <AnimatePresence>
