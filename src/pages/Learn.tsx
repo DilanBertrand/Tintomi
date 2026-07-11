@@ -318,24 +318,21 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
   return (
     <div className="overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <motion.header
-        className="flex flex-wrap items-start justify-between gap-4 px-1"
+        className="px-1"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-tighter text-[#3B82F6]">Academy</p>
-          <h1 className="tm-premium-title mt-1 text-3xl sm:text-4xl">Brain gains</h1>
-          <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">
-            Structured lessons with quizzes. Complete levels to unlock the next track.
-          </p>
-        </div>
-        <IdeaSubmission className="w-full sm:w-auto sm:max-w-xs" />
+        <p className="text-[11px] font-bold uppercase tracking-tighter text-[#3B82F6]">Academy</p>
+        <h1 className="tm-premium-title mt-1 text-3xl sm:text-4xl">Brain gains</h1>
+        <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">
+          Structured lessons with quizzes. Complete levels to unlock the next track.
+        </p>
       </motion.header>
 
       <StaggerPage className="mt-8 space-y-6">
-
-        <Card title="Progress" subtitle="Experience points">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <Card title="Progress" subtitle="Experience points" className="flex-1">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="font-mono text-3xl font-semibold text-[#2979ff]">{xp}</p>
@@ -369,7 +366,9 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           <div className="mt-4">
             <ProgressBar value={xpIntoLevel} max={nextLevelXp} label="Progress to next 100 XP" />
           </div>
-        </Card>
+          </Card>
+          <IdeaSubmission className="sm:w-56" bare />
+        </div>
 
         {weakSpots.length > 0 ? (
           <Card title="Weak spots" subtitle="Questions you missed">
