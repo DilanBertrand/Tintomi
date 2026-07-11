@@ -331,8 +331,7 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
       </motion.header>
 
       <StaggerPage className="mt-8 space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-          <Card title="Progress" subtitle="Experience points" className="flex-1">
+        <Card title="Progress" subtitle="Experience points">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="font-mono text-3xl font-semibold text-[#2979ff]">{xp}</p>
@@ -366,9 +365,7 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           <div className="mt-4">
             <ProgressBar value={xpIntoLevel} max={nextLevelXp} label="Progress to next 100 XP" />
           </div>
-          </Card>
-          <IdeaSubmission className="sm:w-56" bare />
-        </div>
+        </Card>
 
         {weakSpots.length > 0 ? (
           <Card title="Weak spots" subtitle="Questions you missed">
@@ -478,6 +475,8 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           })}
         </div>
       </StaggerPage>
+
+      <IdeaSubmission />
 
       <AnimatePresence>
         {session ? (
