@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Flame } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card } from '../components/Card'
+import { IdeaSubmission } from '../components/IdeaSubmission'
 import { LevelGlyph } from '../components/LevelGlyph'
 import { ProgressBar } from '../components/ProgressBar'
 import { StaggerPage } from '../components/StaggerPage'
@@ -239,7 +240,11 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
       if (answeredAt - questionShownAtRef.current <= SPEED_BONUS_WINDOW_MS) {
         setSpeedBonus((b) => b + XP_SPEED_BONUS)
       }
-      void updateUserXP(10)
+      // Per-answer XP only counts the first time through a lesson; replays
+      // and weak-spot reviews pay nothing (no infinite XP farming).
+      if (!session.review && !done.has(session.id)) {
+        void updateUserXP(10)
+      }
       // Answered right: this question is no longer a weak spot.
       if (weakSpots.includes(currentQ.id)) {
         persistWeakSpots(weakSpots.filter((id) => id !== currentQ.id))
@@ -469,6 +474,8 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
             )
           })}
         </div>
+
+        <IdeaSubmission />
       </StaggerPage>
 
       <AnimatePresence>
