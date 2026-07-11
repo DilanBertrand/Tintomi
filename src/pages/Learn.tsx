@@ -385,6 +385,8 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           </Card>
         ) : null}
 
+        <IdeaSubmission />
+
         <div className="space-y-4">
           {levels.map((level, idx) => {
             const unlocked = isLevelUnlocked(idx, done, xp)
@@ -475,8 +477,6 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
           })}
         </div>
       </StaggerPage>
-
-      <IdeaSubmission />
 
       <AnimatePresence>
         {session ? (
