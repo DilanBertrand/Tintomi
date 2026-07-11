@@ -75,8 +75,7 @@ function initialAuthGateView(): AuthGateView {
 }
 
 export default function App() {
-  const { user, profile, loading: authLoading, authLinkError, clearAuthLinkError, refreshProfile } =
-    useAuth()
+  const { user, profile, loading: authLoading, authLinkError, clearAuthLinkError } = useAuth()
   const [authGateView, setAuthGateView] = useState<AuthGateView>(initialAuthGateView)
   const [tab, setTab] = useState<TabId>('home')
   const [xp, setXp] = useState(0)
@@ -100,27 +99,6 @@ export default function App() {
     else document.body.classList.remove('tm-dashboard')
     return () => document.body.classList.remove('tm-dashboard')
   }, [isLoggedIn])
-
-  /**
-   * Returning from Stripe Checkout (/learn?pro=success). The webhook flips
-   * is_pro server-side; poll refreshProfile a few times to catch it, then
-   * strip the query param so a reload doesn't re-trigger.
-   */
-  useEffect(() => {
-    if (!user) return
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('pro') !== 'success') return
-    let tries = 0
-    const iv = window.setInterval(() => {
-      tries += 1
-      void refreshProfile()
-      if (tries >= 5) window.clearInterval(iv)
-    }, 1500)
-    params.delete('pro')
-    const qs = params.toString()
-    window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`)
-    return () => window.clearInterval(iv)
-  }, [user, refreshProfile])
 
   /** Load Learn XP + completed lessons from localStorage after auth settles; reset when logged out */
   useEffect(() => {
@@ -420,7 +398,6 @@ export default function App() {
                 onAddXp={addXp}
                 completedLessonIds={completedLessonIds}
                 onCompleteLesson={completeLesson}
-                isPro={profile?.is_pro ?? false}
               />
             ) : null}
             {tab === 'invest' ? (

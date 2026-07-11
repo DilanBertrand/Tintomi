@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Crown, LogOut, Settings } from 'lucide-react'
+import { LogOut, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { ProfileAvatar } from '../components/ProfileAvatar'
@@ -66,15 +66,7 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
           <div className="flex items-center gap-4">
             <ProfileAvatar key={avatarUrl ?? 'none'} avatarUrl={avatarUrl} initial={avatarInitial(displayName)} />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="truncate text-xl font-semibold text-[#e9ece8]">{displayName}</p>
-                {profile?.is_pro ? (
-                  <span className="flex shrink-0 items-center gap-1 rounded-full border border-[#c9a227]/50 bg-[#e5c76b]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#e5c76b]">
-                    <Crown className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-                    Pro
-                  </span>
-                ) : null}
-              </div>
+              <p className="truncate text-xl font-semibold text-[#e9ece8]">{displayName}</p>
               <p className="truncate text-sm text-[#a7b0a8]">{user?.email ?? 'Signed in'}</p>
               <p className="mt-0.5 text-sm text-[#a7b0a8]">
                 Level {level} | {xp} XP total
