@@ -25,7 +25,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  const body = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<
+  let parsedBody: unknown = req.body
+  if (typeof parsedBody === 'string') {
+    try {
+      parsedBody = JSON.parse(parsedBody)
+    } catch {
+      parsedBody = {}
+    }
+  }
+  const body = (typeof parsedBody === 'object' && parsedBody !== null ? parsedBody : {}) as Record<
     string,
     unknown
   >
@@ -79,7 +87,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return
     }
     res.status(200).json({ ok: true })
-  } catch {
-    res.status(502).json({ ok: false, error: 'Could not deliver the idea. Try again shortly.' })
+  } catch (err) {
+    console.error('submit-idea crashed:', err)
+    res.status(502).json({
+      ok: false,
+      error: 'Could not deliver the idea. Try again shortly.',
+      detail: err instanceof Error ? err.message : String(err),
+    })
   }
 }
