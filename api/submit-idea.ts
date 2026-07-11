@@ -2,10 +2,15 @@
  * Vercel serverless function: forwards lesson/project ideas to the founder.
  *
  * SECURITY: the founder's inbox is never present in this repo or in any
- * client-delivered code. The function forwards through Web3Forms, whose
- * access key (set as the WEB3FORMS_ACCESS_KEY environment variable in the
- * Vercel dashboard) is bound to the destination email on their side. The
- * browser only ever sees POST /api/submit-idea.
+ * client-delivered code. The function sends through Resend's API (auth via
+ * the RESEND_API_KEY environment variable in the Vercel dashboard), which
+ * is a server-to-server API — not a Cloudflare-fronted form widget — so it
+ * doesn't hit bot-challenge pages from serverless IPs. The browser only
+ * ever sees POST /api/submit-idea.
+ *
+ * Until a custom domain is verified on Resend, mail can only be sent from
+ * onboarding@resend.dev to the Resend account's own signup address, which
+ * is exactly the founder's inbox here.
  */
 
 type VercelRequest = {
@@ -18,6 +23,7 @@ type VercelResponse = {
 }
 
 const MAX_IDEA_LENGTH = 2000
+const FOUNDER_EMAIL = 'bertranddilan32@gmail.com'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -54,8 +60,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  const accessKey = process.env.WEB3FORMS_ACCESS_KEY
-  if (!accessKey) {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
     res.status(503).json({
       ok: false,
       error: 'Idea inbox is not configured yet. Please try again later.',
@@ -63,33 +69,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
+  const escapedIdea = idea.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
   try {
-    const forward = await fetch('https://api.web3forms.com/submit', {
+    const forward = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; Tintomi-Server/1.0; +https://www.tintomi.com)',
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        access_key: accessKey,
+        from: 'Tintomi Idea Box <onboarding@resend.dev>',
+        to: [FOUNDER_EMAIL],
         subject: 'New lesson/project idea from Tintomi',
-        from_name: 'Tintomi Idea Box',
-        message: idea,
+        text: idea,
+        html: `<p>${escapedIdea.replace(/\n/g, '<br>')}</p>`,
       }),
     })
     const rawBody = await forward.text()
-    let result: { success?: boolean; message?: string } = {}
+    let result: { id?: string; message?: string } = {}
     try {
-      result = JSON.parse(rawBody) as { success?: boolean; message?: string }
+      result = JSON.parse(rawBody) as { id?: string; message?: string }
     } catch {
       // Upstream returned non-JSON (HTML error page, gateway block, etc).
     }
-    if (!forward.ok || !result.success) {
-      // Surface the forwarding service's reason in logs to make failures
-      // (unverified key, key typo, quota, non-JSON response) diagnosable
-      // from Vercel logs without guessing.
-      console.error('web3forms rejected:', forward.status, rawBody.slice(0, 300))
+    if (!forward.ok || !result.id) {
+      console.error('resend rejected:', forward.status, rawBody.slice(0, 300))
       res.status(502).json({
         ok: false,
         error: 'Could not deliver the idea. Try again shortly.',
