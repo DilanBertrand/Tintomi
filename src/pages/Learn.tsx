@@ -14,7 +14,7 @@ import {
   type Lesson,
   type QuizQuestion,
 } from '../data/lessons'
-import { storyLessons, type StoryLesson } from '../data/stories'
+import { storyLessons, XP_PER_STORY, type StoryLesson } from '../data/stories'
 import { themeForLevel } from '../learn-themes'
 import { localProgressKeys } from '../lib/localProgress'
 import { addLocalDays, toLocalYmd } from '../lib/streak'
@@ -160,6 +160,7 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
   const [storiesDone, setStoriesDone] = useState<string[]>(() => readCompletedStories(userId))
   const [story, setStory] = useState<StoryLesson | null>(null)
   const [storyPage, setStoryPage] = useState(0)
+  const [storyReward, setStoryReward] = useState<number | null>(null)
   const questionShownAtRef = useRef(0)
 
   useEffect(() => {
@@ -171,10 +172,13 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
   const openStory = (s: StoryLesson) => {
     setStory(s)
     setStoryPage(0)
+    setStoryReward(null)
   }
 
-  const finishStory = () => {
-    if (story && !storiesDone.includes(story.id)) {
+  const finishStory = async () => {
+    if (!story) return
+    const firstTime = !storiesDone.includes(story.id)
+    if (firstTime) {
       const next = [...storiesDone, story.id]
       setStoriesDone(next)
       try {
@@ -182,8 +186,18 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
       } catch {
         // storage full/blocked: state still updates for this session
       }
+      await updateUserXP(XP_PER_STORY)
+      await onAddXp(XP_PER_STORY)
+
+      const nextStreak = bumpLearnStreak(learnStreak)
+      setLearnStreak(nextStreak)
+      try {
+        localStorage.setItem(localProgressKeys.learnStreak(userId), JSON.stringify(nextStreak))
+      } catch {
+        // storage full/blocked: state still updates for this session
+      }
     }
-    setStory(null)
+    setStoryReward(firstTime ? XP_PER_STORY : 0)
   }
 
   const persistWeakSpots = (ids: string[]) => {
@@ -443,7 +457,7 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
-                        {s.minutes} min read{read ? ' · done' : ''}
+                        {s.minutes} min read · +{XP_PER_STORY} XP{read ? ' · done' : ''}
                       </p>
                       <h3 className="mt-1 text-lg font-semibold text-[#e9ece8]">{s.title}</h3>
                       <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">{s.tagline}</p>
@@ -595,72 +609,97 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a7b0a8]">
-                    Lesson · page {storyPage + 1} of {story.pages.length}
+              {storyReward !== null ? (
+                <div className="py-2 text-center">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
+                    Lesson complete
                   </p>
-                  <h3 className="text-xl font-semibold text-[#e9ece8] sm:text-2xl">{story.title}</h3>
+                  <h3 className="mt-1 text-2xl font-semibold text-[#e9ece8]">{story.title}</h3>
+                  {storyReward > 0 ? (
+                    <p className="mt-3 text-sm text-[#2979ff]">+{storyReward} XP earned</p>
+                  ) : (
+                    <p className="mt-3 text-sm text-[#a7b0a8]">
+                      Already completed — no new XP, but good to revisit.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setStory(null)}
+                    className="mt-6 min-h-12 w-full rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
+                  >
+                    Done
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setStory(null)}
-                  className="min-h-12 rounded-lg border border-[#232b25] bg-transparent px-3 py-2 text-sm font-medium text-[#e9ece8] transition-colors hover:bg-[#1a221c]"
-                >
-                  Close
-                </button>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a7b0a8]">
+                        Lesson · page {storyPage + 1} of {story.pages.length}
+                      </p>
+                      <h3 className="text-xl font-semibold text-[#e9ece8] sm:text-2xl">{story.title}</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setStory(null)}
+                      className="min-h-12 rounded-lg border border-[#232b25] bg-transparent px-3 py-2 text-sm font-medium text-[#e9ece8] transition-colors hover:bg-[#1a221c]"
+                    >
+                      Close
+                    </button>
+                  </div>
 
-              <div className="mt-3 flex gap-1.5">
-                {story.pages.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-1 flex-1 rounded-full ${i <= storyPage ? 'bg-[#2979ff]' : 'bg-[#232b25]'}`}
-                  />
-                ))}
-              </div>
+                  <div className="mt-3 flex gap-1.5">
+                    {story.pages.map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full ${i <= storyPage ? 'bg-[#2979ff]' : 'bg-[#232b25]'}`}
+                      />
+                    ))}
+                  </div>
 
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.p
-                  key={storyPage}
-                  initial={{ opacity: 0, x: 12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -12 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-4 min-h-32 text-sm leading-relaxed text-[#e9ece8]"
-                >
-                  {story.pages[storyPage]}
-                </motion.p>
-              </AnimatePresence>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.p
+                      key={storyPage}
+                      initial={{ opacity: 0, x: 12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -12 }}
+                      transition={{ duration: 0.2 }}
+                      className="mt-4 min-h-32 text-sm leading-relaxed text-[#e9ece8]"
+                    >
+                      {story.pages[storyPage]}
+                    </motion.p>
+                  </AnimatePresence>
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                {storyPage > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setStoryPage(storyPage - 1)}
-                    className="min-h-12 rounded-lg border border-[#232b25] bg-transparent px-4 py-3 text-sm font-medium text-[#e9ece8] transition-colors hover:bg-[#1a221c]"
-                  >
-                    Back
-                  </button>
-                ) : null}
-                {storyPage < story.pages.length - 1 ? (
-                  <button
-                    type="button"
-                    onClick={() => setStoryPage(storyPage + 1)}
-                    className="min-h-12 flex-1 rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={finishStory}
-                    className="min-h-12 flex-1 rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
-                  >
-                    Finish lesson
-                  </button>
-                )}
-              </div>
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                    {storyPage > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setStoryPage(storyPage - 1)}
+                        className="min-h-12 rounded-lg border border-[#232b25] bg-transparent px-4 py-3 text-sm font-medium text-[#e9ece8] transition-colors hover:bg-[#1a221c]"
+                      >
+                        Back
+                      </button>
+                    ) : null}
+                    {storyPage < story.pages.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setStoryPage(storyPage + 1)}
+                        className="min-h-12 flex-1 rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
+                      >
+                        Next
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void finishStory()}
+                        className="min-h-12 flex-1 rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
+                      >
+                        Finish lesson
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         ) : null}

@@ -1,3 +1,6 @@
+/** XP awarded the first time a story lesson is finished. */
+export const XP_PER_STORY = 30
+
 export type StoryLesson = {
   id: string
   title: string
