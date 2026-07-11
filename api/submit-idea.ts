@@ -66,9 +66,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         message: idea,
       }),
     })
-    const result = (await forward.json()) as { success?: boolean }
+    const result = (await forward.json()) as { success?: boolean; message?: string }
     if (!forward.ok || !result.success) {
-      res.status(502).json({ ok: false, error: 'Could not deliver the idea. Try again shortly.' })
+      // Surface the forwarding service's reason in logs to make failures
+      // (unverified key, key typo, quota) diagnosable from Vercel logs.
+      console.error('web3forms rejected:', forward.status, result.message)
+      res.status(502).json({
+        ok: false,
+        error: 'Could not deliver the idea. Try again shortly.',
+        detail: result.message ?? `upstream status ${forward.status}`,
+      })
       return
     }
     res.status(200).json({ ok: true })
