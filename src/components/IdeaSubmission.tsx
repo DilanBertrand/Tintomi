@@ -6,11 +6,15 @@ type Status = 'idle' | 'open' | 'sending' | 'sent' | 'error'
 
 const MAX_IDEA_LENGTH = 2000
 
+type IdeaSubmissionProps = {
+  className?: string
+}
+
 /**
  * Idea box: lets learners pitch new lessons/projects. Submissions go to
  * POST /api/submit-idea — the destination inbox lives server-side only.
  */
-export function IdeaSubmission() {
+export function IdeaSubmission({ className = '' }: IdeaSubmissionProps) {
   const [status, setStatus] = useState<Status>('idle')
   const [idea, setIdea] = useState('')
   const [honeypot, setHoneypot] = useState('')
@@ -47,7 +51,7 @@ export function IdeaSubmission() {
   }
 
   return (
-    <Card title="Idea box" subtitle="Shape what we build next">
+    <Card title="Idea box" subtitle="Shape what we build next" className={className}>
       <AnimatePresence mode="wait" initial={false}>
         {status === 'sent' ? (
           <motion.div

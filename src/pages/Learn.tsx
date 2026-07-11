@@ -318,20 +318,22 @@ export function Learn({ userId, xp, onAddXp, completedLessonIds, onCompleteLesso
   return (
     <div className="overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <motion.header
-        className="px-1"
+        className="flex flex-wrap items-start justify-between gap-4 px-1"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <p className="text-[11px] font-bold uppercase tracking-tighter text-[#3B82F6]">Academy</p>
-        <h1 className="tm-premium-title mt-1 text-3xl sm:text-4xl">Brain gains</h1>
-        <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">
-          Structured lessons with quizzes. Complete levels to unlock the next track.
-        </p>
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-tighter text-[#3B82F6]">Academy</p>
+          <h1 className="tm-premium-title mt-1 text-3xl sm:text-4xl">Brain gains</h1>
+          <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">
+            Structured lessons with quizzes. Complete levels to unlock the next track.
+          </p>
+        </div>
+        <IdeaSubmission className="w-full sm:w-auto sm:max-w-xs" />
       </motion.header>
 
       <StaggerPage className="mt-8 space-y-6">
-        <IdeaSubmission />
 
         <Card title="Progress" subtitle="Experience points">
           <div className="flex flex-wrap items-end justify-between gap-3">
