@@ -74,15 +74,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         message: idea,
       }),
     })
-    const result = (await forward.json()) as { success?: boolean; message?: string }
+    const rawBody = await forward.text()
+    let result: { success?: boolean; message?: string } = {}
+    try {
+      result = JSON.parse(rawBody) as { success?: boolean; message?: string }
+    } catch {
+      // Upstream returned non-JSON (HTML error page, gateway block, etc).
+    }
     if (!forward.ok || !result.success) {
       // Surface the forwarding service's reason in logs to make failures
-      // (unverified key, key typo, quota) diagnosable from Vercel logs.
-      console.error('web3forms rejected:', forward.status, result.message)
+      // (unverified key, key typo, quota, non-JSON response) diagnosable
+      // from Vercel logs without guessing.
+      console.error('web3forms rejected:', forward.status, rawBody.slice(0, 300))
       res.status(502).json({
         ok: false,
         error: 'Could not deliver the idea. Try again shortly.',
-        detail: result.message ?? `upstream status ${forward.status}`,
+        detail: result.message ?? `upstream status ${forward.status}: ${rawBody.slice(0, 200)}`,
       })
       return
     }
