@@ -8,4 +8,5 @@ export const localProgressKeys = {
   learnCompletedStories: (userId: string) => `tintomi:v1:learn:completedStories:${userId}`,
   learnWeakSpots: (userId: string) => `tintomi:v1:learn:weakSpots:${userId}`,
   learnStreak: (userId: string) => `tintomi:v1:learn:streak:${userId}`,
+  investWallet: (userId: string) => `tintomi:v1:invest:wallet:${userId}`,
 } as const

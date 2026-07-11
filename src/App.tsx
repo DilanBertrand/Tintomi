@@ -37,9 +37,15 @@ function initHistory(live: LivePrices): PriceHistory {
 
 type WalletState = { balance: number; portfolio: Portfolio }
 
-type WalletAction = { type: 'buy'; stockId: string; price: number } | { type: 'sell'; stockId: string; price: number }
+type WalletAction =
+  | { type: 'buy'; stockId: string; price: number }
+  | { type: 'sell'; stockId: string; price: number }
+  | { type: 'hydrate'; state: WalletState }
+
+const INITIAL_BALANCE = 1000
 
 function walletReducer(state: WalletState, action: WalletAction): WalletState {
+  if (action.type === 'hydrate') return action.state
   if (action.type === 'buy') {
     const { stockId, price } = action
     if (state.balance < price) return state
@@ -81,8 +87,9 @@ export default function App() {
   const [xp, setXp] = useState(0)
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([])
   const [learnPersistReady, setLearnPersistReady] = useState(false)
+  const [walletReady, setWalletReady] = useState(false)
   const [{ balance, portfolio }, dispatchWallet] = useReducer(walletReducer, {
-    balance: 1000,
+    balance: INITIAL_BALANCE,
     portfolio: {},
   })
   const [livePrices, setLivePrices] = useState<LivePrices>(initLive)
@@ -168,6 +175,66 @@ export default function App() {
       /* quota / private mode */
     }
   }, [user?.id, completedLessonIds, learnPersistReady])
+
+  /** Load the paper-trading wallet from localStorage after auth settles; reset when logged out. */
+  useEffect(() => {
+    if (authLoading) return
+    let cancelled = false
+
+    void (async () => {
+      if (!user?.id) {
+        if (!cancelled) {
+          dispatchWallet({ type: 'hydrate', state: { balance: INITIAL_BALANCE, portfolio: {} } })
+          setWalletReady(false)
+        }
+        return
+      }
+      let next: WalletState = { balance: INITIAL_BALANCE, portfolio: {} }
+      try {
+        const raw = localStorage.getItem(localProgressKeys.investWallet(user.id))
+        if (raw !== null) {
+          const parsed: unknown = JSON.parse(raw)
+          if (
+            parsed &&
+            typeof parsed === 'object' &&
+            typeof (parsed as WalletState).balance === 'number' &&
+            Number.isFinite((parsed as WalletState).balance) &&
+            typeof (parsed as WalletState).portfolio === 'object' &&
+            (parsed as WalletState).portfolio !== null
+          ) {
+            const p = parsed as WalletState
+            const portfolio: Portfolio = {}
+            for (const [id, shares] of Object.entries(p.portfolio)) {
+              if (typeof shares === 'number' && Number.isFinite(shares) && shares > 0) {
+                portfolio[id] = Math.floor(shares)
+              }
+            }
+            next = { balance: Math.max(0, p.balance), portfolio }
+          }
+        }
+      } catch {
+        /* corrupt / private mode: fall back to a fresh wallet */
+      }
+      if (!cancelled) {
+        dispatchWallet({ type: 'hydrate', state: next })
+        setWalletReady(true)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id, authLoading])
+
+  /** Persist the wallet on every change, once it has been hydrated for this user. */
+  useEffect(() => {
+    if (!user?.id || !walletReady) return
+    try {
+      localStorage.setItem(localProgressKeys.investWallet(user.id), JSON.stringify({ balance, portfolio }))
+    } catch {
+      /* quota / private mode */
+    }
+  }, [user?.id, balance, portfolio, walletReady])
 
   useEffect(() => {
     if (!isLoggedIn) return
