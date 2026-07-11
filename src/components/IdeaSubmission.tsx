@@ -60,10 +60,11 @@ export function IdeaSubmission() {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3, delay: 0.4 }}
-        className="fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#e9ece8] text-[#0f1412] shadow-lg shadow-black/40 transition-opacity hover:opacity-90 sm:bottom-6"
+        className="fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 flex min-h-14 items-center gap-2.5 rounded-full bg-[#e9ece8] px-6 py-4 text-base font-semibold text-[#0f1412] shadow-lg shadow-black/40 transition-opacity hover:opacity-90 sm:bottom-6"
         aria-label="Suggest an idea"
       >
-        <Lightbulb className="h-5 w-5" strokeWidth={2} aria-hidden />
+        <Lightbulb className="h-6 w-6" strokeWidth={2} aria-hidden />
+        Suggest an idea
       </motion.button>
 
       <AnimatePresence>
