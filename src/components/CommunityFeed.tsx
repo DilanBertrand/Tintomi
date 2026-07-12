@@ -1,14 +1,19 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, ImagePlus, Trash2, X } from 'lucide-react'
+import { Check, Heart, ImagePlus, MessageCircle, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Card } from './Card'
 import {
   createPost,
+  createReply,
   deletePost,
   fetchApprovedPosts,
+  fetchApprovedReplies,
+  fetchLikes,
   fetchMyPosts,
   fetchPendingPosts,
   reviewPost,
+  toggleLike,
+  type LikeInfo,
   type Post,
 } from '../lib/posts'
 
@@ -27,13 +32,51 @@ function timeAgo(iso: string): string {
   return `${Math.floor(s / 86400)}d`
 }
 
-function Avatar({ url, name }: { url: string | null; name: string }) {
+function Avatar({ url, name, small }: { url: string | null; name: string; small?: boolean }) {
+  const size = small ? 'h-7 w-7 text-xs' : 'h-9 w-9 text-sm'
   if (url) {
-    return <img src={url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+    return <img src={url} alt="" className={`${size} shrink-0 rounded-full object-cover`} />
   }
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#232b25] text-sm font-semibold text-[#e9ece8]">
+    <div
+      className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-[#232b25] font-semibold text-[#e9ece8]`}
+    >
       {name.charAt(0).toUpperCase()}
+    </div>
+  )
+}
+
+function StatusBadge({ status }: { status: Post['status'] }) {
+  if (status === 'pending') {
+    return (
+      <span className="rounded-full border border-[#8a6d1d]/50 bg-[#e5c76b]/10 px-2 py-0.5 text-[10px] font-semibold text-[#e5c76b]">
+        An admin is checking your post
+      </span>
+    )
+  }
+  if (status === 'rejected') {
+    return (
+      <span className="rounded-full border border-[#7a2e27]/60 bg-[#ff6b5e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#ff6b5e]">
+        Not approved
+      </span>
+    )
+  }
+  return null
+}
+
+function ReplyRow({ reply, you }: { reply: Post; you: boolean }) {
+  return (
+    <div className="flex gap-2.5 py-2">
+      <Avatar url={reply.author_avatar_url} name={reply.author_name} small />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="text-xs font-semibold text-[#e9ece8]">{reply.author_name}</p>
+          {you ? <span className="text-[10px] text-[#5c665e]">you</span> : null}
+          <span className="text-[10px] text-[#5c665e]">· {timeAgo(reply.created_at)}</span>
+          <StatusBadge status={reply.status} />
+        </div>
+        <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-[#d4d9d2]">{reply.content}</p>
+      </div>
     </div>
   )
 }
@@ -41,16 +84,48 @@ function Avatar({ url, name }: { url: string | null; name: string }) {
 function PostRow({
   post,
   you,
+  userId,
   isAdmin,
+  like,
+  replies,
+  myReplies,
   onReview,
   onDelete,
+  onToggleLike,
+  onReply,
 }: {
   post: Post
   you: boolean
+  userId: string
   isAdmin: boolean
+  like?: LikeInfo
+  replies?: Post[]
+  myReplies?: Post[]
   onReview?: (id: string, status: 'approved' | 'rejected') => void
   onDelete?: (id: string) => void
+  onToggleLike?: (id: string, liked: boolean) => void
+  onReply?: (parentId: string, text: string) => Promise<void>
 }) {
+  const [replyOpen, setReplyOpen] = useState(false)
+  const [replyText, setReplyText] = useState('')
+  const [sending, setSending] = useState(false)
+  const inQueue = isAdmin && post.status === 'pending'
+
+  // Approved replies plus the viewer's own pending/rejected replies to this post.
+  const shownReplies = [
+    ...(replies ?? []),
+    ...(myReplies ?? []).filter((r) => r.status !== 'approved'),
+  ]
+
+  const submitReply = async () => {
+    if (!onReply || sending || replyText.trim().length === 0) return
+    setSending(true)
+    await onReply(post.id, replyText.trim())
+    setReplyText('')
+    setReplyOpen(false)
+    setSending(false)
+  }
+
   return (
     <motion.article
       layout
@@ -66,16 +141,7 @@ function PostRow({
             <p className="text-sm font-semibold text-[#e9ece8]">{post.author_name}</p>
             {you ? <span className="text-xs text-[#5c665e]">you</span> : null}
             <span className="text-xs text-[#5c665e]">· {timeAgo(post.created_at)}</span>
-            {post.status === 'pending' ? (
-              <span className="rounded-full border border-[#8a6d1d]/50 bg-[#e5c76b]/10 px-2 py-0.5 text-[10px] font-semibold text-[#e5c76b]">
-                An admin is checking your post
-              </span>
-            ) : null}
-            {post.status === 'rejected' ? (
-              <span className="rounded-full border border-[#7a2e27]/60 bg-[#ff6b5e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#ff6b5e]">
-                Not approved
-              </span>
-            ) : null}
+            <StatusBadge status={post.status} />
           </div>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#e9ece8]">{post.content}</p>
           {post.image_url ? (
@@ -86,7 +152,8 @@ function PostRow({
               className="mt-3 max-h-96 w-full rounded-xl border border-[#232b25] object-cover"
             />
           ) : null}
-          {isAdmin && post.status === 'pending' && onReview ? (
+
+          {inQueue && onReview ? (
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
@@ -106,6 +173,32 @@ function PostRow({
               </button>
             </div>
           ) : null}
+
+          {/* Actions only on live (approved) posts in the feed. */}
+          {post.status === 'approved' && !isAdmin ? (
+            <div className="mt-2.5 flex items-center gap-5 text-[#5c665e]">
+              <button
+                type="button"
+                onClick={() => onToggleLike?.(post.id, like?.likedByMe ?? false)}
+                className={`flex items-center gap-1.5 text-xs transition-colors hover:text-[#ff5e8a] ${
+                  like?.likedByMe ? 'text-[#ff5e8a]' : ''
+                }`}
+              >
+                <Heart className="h-4 w-4" fill={like?.likedByMe ? 'currentColor' : 'none'} aria-hidden />
+                {like?.count ? like.count : ''}
+                <span className="sr-only">like</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setReplyOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-xs transition-colors hover:text-[#2979ff]"
+              >
+                <MessageCircle className="h-4 w-4" aria-hidden />
+                {(replies?.length ?? 0) > 0 ? replies?.length : 'Reply'}
+              </button>
+            </div>
+          ) : null}
+
           {you && onDelete ? (
             <button
               type="button"
@@ -116,6 +209,35 @@ function PostRow({
               Delete
             </button>
           ) : null}
+
+          {replyOpen ? (
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value.slice(0, MAX_POST_LENGTH))}
+                placeholder="Write a reply…"
+                autoFocus
+                className="min-h-10 flex-1 rounded-lg border border-[#232b25] bg-[#0f1412] px-3 text-sm text-[#e9ece8] placeholder-[#5c665e] outline-none focus:border-[#2979ff]"
+              />
+              <button
+                type="button"
+                onClick={() => void submitReply()}
+                disabled={sending || replyText.trim().length === 0}
+                className="min-h-10 rounded-full bg-[#e9ece8] px-5 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {sending ? 'Sending…' : 'Reply'}
+              </button>
+            </div>
+          ) : null}
+
+          {shownReplies.length > 0 ? (
+            <div className="mt-2 border-l-2 border-[#232b25] pl-3">
+              {shownReplies.map((r) => (
+                <ReplyRow key={r.id} reply={r} you={r.user_id === userId} />
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </motion.article>
@@ -123,14 +245,16 @@ function PostRow({
 }
 
 /**
- * Threads-style community feed. Posts submit as 'pending'; only the founder
- * (is_admin) sees and reviews the queue. Authors see their own pending and
- * rejected posts inline with a status badge; everyone else only sees approved.
+ * Threads-style community feed with approve-first moderation. Posts and replies
+ * both submit as 'pending' and only go public after founder approval. Authors
+ * see their own pending/rejected items inline; others only see approved.
  */
 export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
   const [approved, setApproved] = useState<Post[]>([])
   const [mine, setMine] = useState<Post[]>([])
   const [pendingQueue, setPendingQueue] = useState<Post[]>([])
+  const [replies, setReplies] = useState<Post[]>([])
+  const [likes, setLikes] = useState<Record<string, LikeInfo>>({})
   const [loading, setLoading] = useState(true)
   const [draft, setDraft] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -149,6 +273,14 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
     setApproved(a)
     setMine(m)
     setPendingQueue(q)
+
+    const parentIds = a.map((p) => p.id)
+    const [reps, likeMap] = await Promise.all([
+      fetchApprovedReplies(parentIds),
+      fetchLikes(parentIds, userId),
+    ])
+    setReplies(reps)
+    setLikes(likeMap)
     setLoading(false)
   }, [userId, isAdmin])
 
@@ -195,10 +327,34 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
     await refresh()
   }
 
-  // Shared feed = approved posts; splice the author's own pending/rejected on
-  // top so they can see where their post stands. Dedupe own approved posts.
-  const ownExtras = mine.filter((p) => p.status !== 'approved')
+  const handleToggleLike = async (id: string, liked: boolean) => {
+    // Optimistic flip.
+    setLikes((prev) => {
+      const cur = prev[id] ?? { count: 0, likedByMe: false }
+      return {
+        ...prev,
+        [id]: { count: Math.max(0, cur.count + (liked ? -1 : 1)), likedByMe: !liked },
+      }
+    })
+    const err = await toggleLike(id, userId, liked)
+    if (err) await refresh()
+  }
+
+  const handleReply = async (parentId: string, text: string) => {
+    const err = await createReply(userId, parentId, text)
+    if (err) {
+      setError(err)
+    } else {
+      setNotice('Reply submitted. An admin will check it before it goes live.')
+      await refresh()
+    }
+  }
+
+  const ownExtras = mine.filter((p) => p.status !== 'approved' && p.parent_id === null)
   const feed = [...ownExtras, ...approved]
+  const repliesByParent = (parentId: string) => replies.filter((r) => r.parent_id === parentId)
+  const myRepliesByParent = (parentId: string) =>
+    mine.filter((r) => r.parent_id === parentId)
 
   return (
     <div className="space-y-6">
@@ -265,7 +421,14 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
           </p>
           <AnimatePresence initial={false}>
             {pendingQueue.map((p) => (
-              <PostRow key={p.id} post={p} you={p.user_id === userId} isAdmin onReview={handleReview} />
+              <PostRow
+                key={p.id}
+                post={p}
+                you={p.user_id === userId}
+                userId={userId}
+                isAdmin
+                onReview={handleReview}
+              />
             ))}
           </AnimatePresence>
         </div>
@@ -285,8 +448,14 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
                 key={p.id}
                 post={p}
                 you={p.user_id === userId}
+                userId={userId}
                 isAdmin={false}
+                like={likes[p.id]}
+                replies={repliesByParent(p.id)}
+                myReplies={myRepliesByParent(p.id)}
                 onDelete={p.user_id === userId ? handleDelete : undefined}
+                onToggleLike={handleToggleLike}
+                onReply={handleReply}
               />
             ))}
           </AnimatePresence>

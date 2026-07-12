@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { MeshBackdrop } from './components/MeshBackdrop'
 import { Navbar, type TabId } from './components/Navbar'
 import { NotificationBell } from './components/NotificationBell'
+import { LevelUpToast } from './components/LevelUpToast'
 import { stocks } from './data/stocks'
 import { Community } from './pages/Community'
 import { Home } from './pages/Home'
@@ -153,6 +154,8 @@ export default function App() {
   const [walletReady, setWalletReady] = useState(false)
   /** True once this user's progress has been merged from the DB — gates DB writes. */
   const [progressSynced, setProgressSynced] = useState(false)
+  const [levelUp, setLevelUp] = useState<number | null>(null)
+  const lastLevelRef = useRef<number | null>(null)
   const [{ balance, portfolio }, dispatchWallet] = useReducer(walletReducer, {
     balance: INITIAL_BALANCE,
     portfolio: {},
@@ -188,6 +191,7 @@ export default function App() {
       setLearnPersistReady(false)
       setWalletReady(false)
       setProgressSynced(false)
+      lastLevelRef.current = null
       if (!user?.id) {
         if (!cancelled) {
           setXp(0)
@@ -298,6 +302,22 @@ export default function App() {
     }
     if (progressSynced) void saveProgress(user.id, { wallet: { balance, portfolio } })
   }, [user?.id, balance, portfolio, walletReady, progressSynced])
+
+  // Celebrate crossing into a new level (every 100 XP). The first value seen
+  // after the DB merge just seeds the baseline — no toast for loading progress.
+  useEffect(() => {
+    if (!progressSynced) return
+    const level = Math.floor(xp / 100) + 1
+    if (lastLevelRef.current === null) {
+      lastLevelRef.current = level
+      return
+    }
+    if (level > lastLevelRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- fires on the XP-crossing event, not a render loop
+      setLevelUp(level)
+    }
+    lastLevelRef.current = level
+  }, [xp, progressSynced])
 
   useEffect(() => {
     if (!isLoggedIn) return
@@ -513,6 +533,7 @@ export default function App() {
   return (
     <div className="relative flex min-h-dvh flex-col text-gray-100">
       <MeshBackdrop />
+      <LevelUpToast level={levelUp} onDone={() => setLevelUp(null)} />
       <div className="relative z-10 mx-auto w-full max-w-4xl flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10">
         <header className="relative mb-4 flex min-h-[2.75rem] w-full items-center justify-center pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:min-h-[3rem]">
           <p className="tm-chrome-wordmark-app max-w-[calc(100%-2rem)] text-center sm:max-w-none">TINTOMI</p>

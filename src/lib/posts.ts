@@ -5,6 +5,7 @@ export type PostStatus = 'pending' | 'approved' | 'rejected'
 export type Post = {
   id: string
   user_id: string
+  parent_id: string | null
   content: string
   image_url: string | null
   status: PostStatus
@@ -19,6 +20,7 @@ const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 type PostRow = {
   id: string
   user_id: string
+  parent_id: string | null
   content: string
   image_url: string | null
   status: string
@@ -31,6 +33,7 @@ function mapPost(row: PostRow): Post {
   return {
     id: row.id,
     user_id: row.user_id,
+    parent_id: row.parent_id,
     content: row.content,
     image_url: row.image_url,
     status: (['pending', 'approved', 'rejected'] as const).includes(row.status as PostStatus)
@@ -42,18 +45,36 @@ function mapPost(row: PostRow): Post {
   }
 }
 
-const POST_SELECT = 'id, user_id, content, image_url, status, created_at, profiles (username, full_name, avatar_url)'
+const POST_SELECT =
+  'id, user_id, parent_id, content, image_url, status, created_at, profiles (username, full_name, avatar_url)'
 
-/** Approved posts, newest first, for the shared feed. */
+/** Approved top-level posts (no replies), newest first, for the shared feed. */
 export async function fetchApprovedPosts(limit = 50): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')
     .select(POST_SELECT)
     .eq('status', 'approved')
+    .is('parent_id', null)
     .order('created_at', { ascending: false })
     .limit(limit)
   if (error) {
     console.warn('[posts] fetch approved failed:', error.message)
+    return []
+  }
+  return ((data ?? []) as unknown as PostRow[]).map(mapPost)
+}
+
+/** Approved replies for the given parent posts, oldest first. */
+export async function fetchApprovedReplies(parentIds: string[]): Promise<Post[]> {
+  if (parentIds.length === 0) return []
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_SELECT)
+    .eq('status', 'approved')
+    .in('parent_id', parentIds)
+    .order('created_at', { ascending: true })
+  if (error) {
+    console.warn('[posts] fetch replies failed:', error.message)
     return []
   }
   return ((data ?? []) as unknown as PostRow[]).map(mapPost)
@@ -140,6 +161,61 @@ export async function createPost(userId: string, content: string, imageFile: Fil
   if (error) {
     console.warn('[posts] insert failed:', error.message)
     return 'Could not submit the post. Try again.'
+  }
+  return null
+}
+
+/** Creates a reply as 'pending' — text only, subject to the same approval flow. */
+export async function createReply(userId: string, parentId: string, content: string): Promise<string | null> {
+  const text = content.trim()
+  if (text.length < 1) return 'Write a reply first.'
+  if (text.length > 1000) return 'Replies are capped at 1000 characters.'
+  const { error } = await supabase
+    .from('posts')
+    .insert({ user_id: userId, parent_id: parentId, content: text })
+  if (error) {
+    console.warn('[posts] reply insert failed:', error.message)
+    return 'Could not submit the reply. Try again.'
+  }
+  return null
+}
+
+export type LikeInfo = { count: number; likedByMe: boolean }
+
+/** Like counts + whether the current user liked, for the given post ids. */
+export async function fetchLikes(postIds: string[], userId: string): Promise<Record<string, LikeInfo>> {
+  const result: Record<string, LikeInfo> = {}
+  for (const id of postIds) result[id] = { count: 0, likedByMe: false }
+  if (postIds.length === 0) return result
+  const { data, error } = await supabase.from('post_likes').select('post_id, user_id').in('post_id', postIds)
+  if (error) {
+    console.warn('[posts] fetch likes failed:', error.message)
+    return result
+  }
+  for (const row of data ?? []) {
+    const pid = String((row as { post_id: string }).post_id)
+    const uid = String((row as { user_id: string }).user_id)
+    if (!result[pid]) result[pid] = { count: 0, likedByMe: false }
+    result[pid].count += 1
+    if (uid === userId) result[pid].likedByMe = true
+  }
+  return result
+}
+
+/** Toggle a like on a post. `liked` is the CURRENT state; we flip it. */
+export async function toggleLike(postId: string, userId: string, liked: boolean): Promise<string | null> {
+  if (liked) {
+    const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId)
+    if (error) {
+      console.warn('[posts] unlike failed:', error.message)
+      return 'Could not update like.'
+    }
+  } else {
+    const { error } = await supabase.from('post_likes').insert({ post_id: postId, user_id: userId })
+    if (error) {
+      console.warn('[posts] like failed:', error.message)
+      return 'Could not update like.'
+    }
   }
   return null
 }
