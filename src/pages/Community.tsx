@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { Card } from '../components/Card'
+import { CommunityFeed } from '../components/CommunityFeed'
 import { StaggerPage } from '../components/StaggerPage'
 import { useAuth } from '../contexts/AuthContext'
 import { localProgressKeys } from '../lib/localProgress'
@@ -339,6 +340,8 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
       </motion.header>
 
       <StaggerPage className="mt-8 space-y-6">
+        <CommunityFeed userId={userId} isAdmin={profile?.is_admin ?? false} />
+
         <Card title="CHALLENGE">
           <p className="text-sm font-semibold text-[#e9ece8]">Save $20 this week.</p>
           <p className="mt-2 text-sm text-[#a7b0a8]">

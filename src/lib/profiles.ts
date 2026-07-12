@@ -47,6 +47,7 @@ function mapProfile(row: Record<string, unknown>): ProfileRow {
     login_streak: typeof row.login_streak === 'number' ? row.login_streak : Number(row.login_streak) || 1,
     last_streak_date: (row.last_streak_date as string) ?? null,
     is_pro: row.is_pro === true,
+    is_admin: row.is_admin === true,
     completed_lessons: toStringArray(row.completed_lessons),
     completed_stories: toStringArray(row.completed_stories),
     learn_streak: toLearnStreak(row.learn_streak),
