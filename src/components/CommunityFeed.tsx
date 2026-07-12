@@ -57,7 +57,7 @@ function PostRow({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      className="border-b border-[#232b25] px-1 py-4 last:border-b-0"
+      className="border-b border-[#232b25] px-4 py-4 last:border-b-0"
     >
       <div className="flex gap-3">
         <Avatar url={post.author_avatar_url} name={post.author_name} />
@@ -201,8 +201,8 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
   const feed = [...ownExtras, ...approved]
 
   return (
-    <Card title="Feed" subtitle="Wins, questions, ideas — reviewed before they go live">
-      <div>
+    <div className="space-y-6">
+      <Card title="New post" subtitle="Wins, questions, ideas — reviewed before they go live">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value.slice(0, MAX_POST_LENGTH))}
@@ -256,10 +256,10 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
         </div>
         {notice ? <p className="mt-2 text-xs text-[#2979ff]">{notice}</p> : null}
         {error ? <p className="mt-2 text-xs text-[#ff6b5e]">{error}</p> : null}
-      </div>
+      </Card>
 
       {isAdmin && pendingQueue.length > 0 ? (
-        <div className="mt-5 rounded-xl border border-[#8a6d1d]/40 bg-[#e5c76b]/5 p-3">
+        <div className="rounded-xl border border-[#8a6d1d]/40 bg-[#e5c76b]/5 p-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#e5c76b]">
             Awaiting your review · {pendingQueue.length}
           </p>
@@ -271,11 +271,11 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
         </div>
       ) : null}
 
-      <div className="mt-4">
+      <div className="rounded-2xl border border-[#232b25] bg-[#121a15]">
         {loading ? (
-          <p className="py-6 text-center text-sm text-[#5c665e]">Loading the feed…</p>
+          <p className="px-4 py-6 text-center text-sm text-[#5c665e]">Loading the feed…</p>
         ) : feed.length === 0 ? (
-          <p className="py-6 text-center text-sm text-[#5c665e]">
+          <p className="px-4 py-6 text-center text-sm text-[#5c665e]">
             Nothing here yet. Be the first to share a win.
           </p>
         ) : (
@@ -292,6 +292,6 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
           </AnimatePresence>
         )}
       </div>
-    </Card>
+    </div>
   )
 }
