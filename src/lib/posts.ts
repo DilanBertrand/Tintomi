@@ -45,8 +45,12 @@ function mapPost(row: PostRow): Post {
   }
 }
 
+// profiles is named explicitly via the FK constraint (posts_user_id_fkey) because
+// PostgREST otherwise reports "more than one relationship" between posts and
+// profiles (posts also self-references via parent_id, and PostgREST's embed
+// resolution can misfire without the explicit hint).
 const POST_SELECT =
-  'id, user_id, parent_id, content, image_url, status, created_at, profiles (username, full_name, avatar_url)'
+  'id, user_id, parent_id, content, image_url, status, created_at, profiles!posts_user_id_fkey (username, full_name, avatar_url)'
 
 /** Approved top-level posts (no replies), newest first, for the shared feed. */
 export async function fetchApprovedPosts(limit = 50): Promise<Post[]> {
