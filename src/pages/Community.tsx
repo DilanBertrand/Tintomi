@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { ArrowLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Card } from '../components/Card'
 import { CommunityFeed } from '../components/CommunityFeed'
@@ -117,6 +118,7 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
   const [lockLoading, setLockLoading] = useState(true)
   const [unlockSaving, setUnlockSaving] = useState(false)
   const [unlockError, setUnlockError] = useState<string | null>(null)
+  const [view, setView] = useState<'main' | 'feed'>('main')
 
   useEffect(() => {
     let cancelled = false
@@ -324,6 +326,36 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
     setUnlockSaving(false)
   }
 
+  if (view === 'feed') {
+    return (
+      <div className="overflow-y-auto pb-20">
+        <motion.header
+          className="flex items-center gap-3 px-1"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <button
+            type="button"
+            onClick={() => setView('main')}
+            className="flex min-h-10 items-center gap-1.5 rounded-lg border border-[#232b25] bg-transparent px-3 py-2 text-sm font-medium text-[#e9ece8] transition-colors hover:bg-[#1a221c]"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back
+          </button>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#a7b0a8]">NETWORK</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-[#e9ece8] sm:text-3xl">Posts</h1>
+          </div>
+        </motion.header>
+
+        <StaggerPage className="mt-8 space-y-6">
+          <CommunityFeed userId={userId} isAdmin={profile?.is_admin ?? false} />
+        </StaggerPage>
+      </div>
+    )
+  }
+
   return (
     <div className="overflow-y-auto pb-20">
       <motion.header
@@ -340,7 +372,20 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
       </motion.header>
 
       <StaggerPage className="mt-8 space-y-6">
-        <CommunityFeed userId={userId} isAdmin={profile?.is_admin ?? false} />
+        <Card title="POSTS" subtitle="Wins, questions, ideas from the community">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-sm text-sm text-[#a7b0a8]">
+              Share a win or browse what others are posting. Reviewed by the founder before going live.
+            </p>
+            <button
+              type="button"
+              onClick={() => setView('feed')}
+              className="min-h-12 shrink-0 rounded-full bg-[#e9ece8] px-6 py-3 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90"
+            >
+              See community posts
+            </button>
+          </div>
+        </Card>
 
         <Card title="CHALLENGE">
           <p className="text-sm font-semibold text-[#e9ece8]">Save $20 this week.</p>
