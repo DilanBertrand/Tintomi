@@ -64,7 +64,15 @@ function StatusBadge({ status }: { status: Post['status'] }) {
   return null
 }
 
-function ReplyRow({ reply, you }: { reply: Post; you: boolean }) {
+function ReplyRow({
+  reply,
+  you,
+  onDelete,
+}: {
+  reply: Post
+  you: boolean
+  onDelete?: (id: string) => void
+}) {
   return (
     <div className="flex gap-2.5 py-2">
       <Avatar url={reply.author_avatar_url} name={reply.author_name} small />
@@ -76,6 +84,16 @@ function ReplyRow({ reply, you }: { reply: Post; you: boolean }) {
           <StatusBadge status={reply.status} />
         </div>
         <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-[#d4d9d2]">{reply.content}</p>
+        {you && onDelete ? (
+          <button
+            type="button"
+            onClick={() => onDelete(reply.id)}
+            className="mt-1 flex items-center gap-1 text-[11px] text-[#5c665e] transition-colors hover:text-[#ff6b5e]"
+          >
+            <Trash2 className="h-3 w-3" aria-hidden />
+            Delete
+          </button>
+        ) : null}
       </div>
     </div>
   )
@@ -91,6 +109,7 @@ function PostRow({
   myReplies,
   onReview,
   onDelete,
+  onDeleteReply,
   onToggleLike,
   onReply,
 }: {
@@ -103,6 +122,7 @@ function PostRow({
   myReplies?: Post[]
   onReview?: (id: string, status: 'approved' | 'rejected') => void
   onDelete?: (id: string) => void
+  onDeleteReply?: (id: string) => void
   onToggleLike?: (id: string, liked: boolean) => void
   onReply?: (parentId: string, text: string) => Promise<void>
 }) {
@@ -234,7 +254,12 @@ function PostRow({
           {shownReplies.length > 0 ? (
             <div className="mt-2 border-l-2 border-[#232b25] pl-3">
               {shownReplies.map((r) => (
-                <ReplyRow key={r.id} reply={r} you={r.user_id === userId} />
+                <ReplyRow
+                  key={r.id}
+                  reply={r}
+                  you={r.user_id === userId}
+                  onDelete={r.user_id === userId ? onDeleteReply : undefined}
+                />
               ))}
             </div>
           ) : null}
@@ -454,6 +479,7 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
                 replies={repliesByParent(p.id)}
                 myReplies={myRepliesByParent(p.id)}
                 onDelete={p.user_id === userId ? handleDelete : undefined}
+                onDeleteReply={handleDelete}
                 onToggleLike={handleToggleLike}
                 onReply={handleReply}
               />
