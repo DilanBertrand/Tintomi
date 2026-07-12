@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { MeshBackdrop } from './components/MeshBackdrop'
 import { Navbar, type TabId } from './components/Navbar'
+import { NotificationBell } from './components/NotificationBell'
 import { stocks } from './data/stocks'
 import { Community } from './pages/Community'
 import { Home } from './pages/Home'
@@ -515,6 +516,7 @@ export default function App() {
       <div className="relative z-10 mx-auto w-full max-w-4xl flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10">
         <header className="relative mb-4 flex min-h-[2.75rem] w-full items-center justify-center pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:min-h-[3rem]">
           <p className="tm-chrome-wordmark-app max-w-[calc(100%-2rem)] text-center sm:max-w-none">TINTOMI</p>
+          <NotificationBell userId={user.id} />
         </header>
         <AnimatePresence mode="wait">
           <motion.div
@@ -540,6 +542,7 @@ export default function App() {
             ) : null}
             {tab === 'invest' ? (
               <Invest
+                userId={user.id}
                 balance={balance}
                 portfolio={portfolio}
                 live={livePrices}
@@ -551,7 +554,7 @@ export default function App() {
             {tab === 'community' ? (
               <Community userId={user.id} userXp={xp} youDisplayName={displayName} onAddXp={addXp} />
             ) : null}
-            {tab === 'profile' ? <Profile xp={xp} portfolioValue={portfolioValue} /> : null}
+            {tab === 'profile' ? <Profile xp={xp} portfolioValue={portfolioValue} onAddXp={addXp} /> : null}
           </motion.div>
         </AnimatePresence>
       </div>

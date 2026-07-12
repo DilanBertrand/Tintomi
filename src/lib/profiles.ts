@@ -48,6 +48,8 @@ function mapProfile(row: Record<string, unknown>): ProfileRow {
     last_streak_date: (row.last_streak_date as string) ?? null,
     is_pro: row.is_pro === true,
     is_admin: row.is_admin === true,
+    referral_code: typeof row.referral_code === 'string' ? row.referral_code : null,
+    referred_by: typeof row.referred_by === 'string' ? row.referred_by : null,
     completed_lessons: toStringArray(row.completed_lessons),
     completed_stories: toStringArray(row.completed_stories),
     learn_streak: toLearnStreak(row.learn_streak),

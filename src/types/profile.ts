@@ -8,6 +8,8 @@ export type ProfileRow = {
   last_streak_date: string | null
   is_pro: boolean
   is_admin: boolean
+  referral_code: string | null
+  referred_by: string | null
   completed_lessons: string[]
   completed_stories: string[]
   learn_streak: { streak: number; lastStreakDate: string | null } | null

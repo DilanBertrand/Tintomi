@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Card } from '../components/Card'
 import { StaggerPage } from '../components/StaggerPage'
 import { StockCard } from '../components/StockCard'
+import { TraderLeaderboard } from '../components/TraderLeaderboard'
 import { stocks } from '../data/stocks'
 import { fadeSlideUp } from '../motion/variants'
 
@@ -16,6 +17,7 @@ const WATCHLIST_POINTS = 20
 const SPARK_TICK_MS = 3000
 
 type InvestProps = {
+  userId: string
   balance: number
   portfolio: Portfolio
   live: LivePrices
@@ -42,7 +44,7 @@ function initWatchLines(chartSeries: PriceHistory, live: LivePrices): Record<str
   return o
 }
 
-export function Invest({ balance, portfolio, live, chartSeries, onBuy, onSell }: InvestProps) {
+export function Invest({ userId, balance, portfolio, live, chartSeries, onBuy, onSell }: InvestProps) {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
@@ -160,6 +162,8 @@ export function Invest({ balance, portfolio, live, chartSeries, onBuy, onSell }:
           ))}
         </div>
       </motion.div>
+
+      <TraderLeaderboard userId={userId} live={live} />
 
       <Card title="Disclosure" subtitle="Not real markets" accent="neutral" glowRgb="160, 165, 175">
         <p className="text-sm leading-relaxed text-[#6b756c]">

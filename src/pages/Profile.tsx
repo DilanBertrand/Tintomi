@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { Card } from '../components/Card'
 import { ProfileSettingsModal } from '../components/ProfileSettingsModal'
+import { ReferralCard } from '../components/ReferralCard'
 import { ProgressBar } from '../components/ProgressBar'
 import { StaggerPage } from '../components/StaggerPage'
 import { getDisplayName } from '../lib/displayName'
@@ -13,6 +14,7 @@ import { PROFILES_TABLE_SETUP_HINT, streakForDisplay } from '../lib/profiles'
 type ProfileProps = {
   xp: number
   portfolioValue: number
+  onAddXp: (amount: number) => Promise<void> | void
 }
 
 function badgesForXp(xp: number) {
@@ -31,7 +33,7 @@ function avatarInitial(name: string): string {
   return c ? c.toUpperCase() : '?'
 }
 
-export function Profile({ xp, portfolioValue }: ProfileProps) {
+export function Profile({ xp, portfolioValue, onAddXp }: ProfileProps) {
   const { user, profile, signOut } = useAuth()
   const [signingOut, setSigningOut] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -102,6 +104,8 @@ export function Profile({ xp, portfolioValue }: ProfileProps) {
             </button>
           </div>
         </Card>
+
+        <ReferralCard onAddXp={onAddXp} />
 
         <Card title="PORTFOLIO" subtitle="Cash + holdings">
           <p className="font-mono text-3xl font-semibold text-[#2979ff]">${portfolioValue.toFixed(2)}</p>
