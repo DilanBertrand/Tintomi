@@ -15,6 +15,14 @@ import { Profile } from './pages/Profile'
 import { SignUp } from './pages/SignUp'
 import { fetchCandleCloses } from './lib/finnhub'
 import { localProgressKeys } from './lib/localProgress'
+import { fetchProfile } from './lib/profiles'
+import { saveProgress } from './lib/progressSync'
+import {
+  bumpLearnStreak,
+  displayLearnStreak,
+  mergeLearnStreak,
+  type LearnStreak,
+} from './lib/streak'
 import { getDisplayName, truncateForNav } from './lib/displayName'
 import { pathToTab, tabToPath } from './lib/routes'
 
@@ -70,6 +78,58 @@ function walletReducer(state: WalletState, action: WalletAction): WalletState {
   return state
 }
 
+function readStringArray(raw: string | null): string[] {
+  if (raw === null) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.filter((v): v is string => typeof v === 'string')
+  } catch {
+    /* corrupt */
+  }
+  return []
+}
+
+function readStreak(raw: string | null): LearnStreak {
+  if (raw === null) return { streak: 0, lastStreakDate: null }
+  try {
+    const parsed = JSON.parse(raw) as Partial<LearnStreak>
+    if (parsed && typeof parsed.streak === 'number' && Number.isFinite(parsed.streak)) {
+      return {
+        streak: Math.max(0, Math.floor(parsed.streak)),
+        lastStreakDate: typeof parsed.lastStreakDate === 'string' ? parsed.lastStreakDate : null,
+      }
+    }
+  } catch {
+    /* corrupt */
+  }
+  return { streak: 0, lastStreakDate: null }
+}
+
+function readWallet(raw: string | null): WalletState | null {
+  if (raw === null) return null
+  try {
+    const parsed = JSON.parse(raw) as Partial<WalletState>
+    if (
+      parsed &&
+      typeof parsed.balance === 'number' &&
+      Number.isFinite(parsed.balance) &&
+      parsed.portfolio &&
+      typeof parsed.portfolio === 'object'
+    ) {
+      const portfolio: Portfolio = {}
+      for (const [id, shares] of Object.entries(parsed.portfolio)) {
+        if (typeof shares === 'number' && Number.isFinite(shares) && shares > 0) {
+          portfolio[id] = Math.floor(shares)
+        }
+      }
+      return { balance: Math.max(0, parsed.balance), portfolio }
+    }
+  } catch {
+    /* corrupt */
+  }
+  return null
+}
+
 type AuthGateView = 'landing' | 'login' | 'signup'
 
 function initialAuthGateView(): AuthGateView {
@@ -86,8 +146,12 @@ export default function App() {
   const [tab, setTab] = useState<TabId>('home')
   const [xp, setXp] = useState(0)
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([])
+  const [completedStoryIds, setCompletedStoryIds] = useState<string[]>([])
+  const [learnStreak, setLearnStreak] = useState<LearnStreak>({ streak: 0, lastStreakDate: null })
   const [learnPersistReady, setLearnPersistReady] = useState(false)
   const [walletReady, setWalletReady] = useState(false)
+  /** True once this user's progress has been merged from the DB — gates DB writes. */
+  const [progressSynced, setProgressSynced] = useState(false)
   const [{ balance, portfolio }, dispatchWallet] = useReducer(walletReducer, {
     balance: INITIAL_BALANCE,
     portfolio: {},
@@ -107,50 +171,71 @@ export default function App() {
     return () => document.body.classList.remove('tm-dashboard')
   }, [isLoggedIn])
 
-  /** Load Learn XP + completed lessons from localStorage after auth settles; reset when logged out */
+  /**
+   * Hydrate all progress (XP, lessons, stories, wallet, lesson streak) once auth
+   * settles: merge localStorage with the DB profile so nothing is lost and
+   * progress follows the account across devices. XP and completed lists escalate
+   * (max / union — never lose an achievement); wallet and streak take the DB copy
+   * when present (last-write-wins across devices). progressSynced then unlocks
+   * DB write-through.
+   */
   useEffect(() => {
     if (authLoading) return
     let cancelled = false
 
     void (async () => {
+      setLearnPersistReady(false)
+      setWalletReady(false)
+      setProgressSynced(false)
       if (!user?.id) {
         if (!cancelled) {
           setXp(0)
           setCompletedLessonIds([])
-          setLearnPersistReady(false)
+          setCompletedStoryIds([])
+          setLearnStreak({ streak: 0, lastStreakDate: null })
+          dispatchWallet({ type: 'hydrate', state: { balance: INITIAL_BALANCE, portfolio: {} } })
         }
         return
       }
+
+      // --- local cache ---
+      let localXp = 0
+      let localLessons: string[] = []
+      let localStories: string[] = []
+      let localStreak: LearnStreak = { streak: 0, lastStreakDate: null }
+      let localWallet: WalletState | null = null
       try {
         const xpRaw = localStorage.getItem(localProgressKeys.learnXp(user.id))
-        if (!cancelled) {
-          if (xpRaw !== null) {
-            const n = Number(xpRaw)
-            setXp(Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0)
-          } else {
-            setXp(0)
-          }
+        if (xpRaw !== null) {
+          const n = Number(xpRaw)
+          if (Number.isFinite(n) && n >= 0) localXp = Math.floor(n)
         }
-        const lessonsRaw = localStorage.getItem(localProgressKeys.learnCompletedLessons(user.id))
-        if (!cancelled) {
-          if (lessonsRaw !== null) {
-            const parsed: unknown = JSON.parse(lessonsRaw)
-            if (Array.isArray(parsed) && parsed.every((x): x is string => typeof x === 'string')) {
-              setCompletedLessonIds(parsed)
-            } else {
-              setCompletedLessonIds([])
-            }
-          } else {
-            setCompletedLessonIds([])
-          }
-        }
+        localLessons = readStringArray(localStorage.getItem(localProgressKeys.learnCompletedLessons(user.id)))
+        localStories = readStringArray(localStorage.getItem(localProgressKeys.learnCompletedStories(user.id)))
+        localStreak = readStreak(localStorage.getItem(localProgressKeys.learnStreak(user.id)))
+        localWallet = readWallet(localStorage.getItem(localProgressKeys.investWallet(user.id)))
       } catch {
-        if (!cancelled) {
-          setXp(0)
-          setCompletedLessonIds([])
-        }
+        /* private mode / corrupt: treat as empty */
       }
-      if (!cancelled) setLearnPersistReady(true)
+
+      // --- DB profile (source of truth across devices) ---
+      const db = await fetchProfile(user.id)
+      if (cancelled) return
+
+      const mergedXp = Math.max(localXp, db?.xp ?? 0)
+      const mergedLessons = Array.from(new Set([...localLessons, ...(db?.completed_lessons ?? [])]))
+      const mergedStories = Array.from(new Set([...localStories, ...(db?.completed_stories ?? [])]))
+      const mergedStreak = mergeLearnStreak(localStreak, db?.learn_streak ?? null)
+      const mergedWallet: WalletState = db?.wallet ?? localWallet ?? { balance: INITIAL_BALANCE, portfolio: {} }
+
+      setXp(mergedXp)
+      setCompletedLessonIds(mergedLessons)
+      setCompletedStoryIds(mergedStories)
+      setLearnStreak(mergedStreak)
+      dispatchWallet({ type: 'hydrate', state: mergedWallet })
+      setLearnPersistReady(true)
+      setWalletReady(true)
+      setProgressSynced(true)
     })()
 
     return () => {
@@ -158,6 +243,7 @@ export default function App() {
     }
   }, [user?.id, authLoading])
 
+  // Persist XP: localStorage cache always, DB once merged.
   useEffect(() => {
     if (!user?.id || !learnPersistReady) return
     try {
@@ -165,8 +251,10 @@ export default function App() {
     } catch {
       /* quota / private mode */
     }
-  }, [user?.id, xp, learnPersistReady])
+    if (progressSynced) void saveProgress(user.id, { xp })
+  }, [user?.id, xp, learnPersistReady, progressSynced])
 
+  // Persist completed lessons.
   useEffect(() => {
     if (!user?.id || !learnPersistReady) return
     try {
@@ -174,59 +262,32 @@ export default function App() {
     } catch {
       /* quota / private mode */
     }
-  }, [user?.id, completedLessonIds, learnPersistReady])
+    if (progressSynced) void saveProgress(user.id, { completed_lessons: completedLessonIds })
+  }, [user?.id, completedLessonIds, learnPersistReady, progressSynced])
 
-  /** Load the paper-trading wallet from localStorage after auth settles; reset when logged out. */
+  // Persist completed story lessons.
   useEffect(() => {
-    if (authLoading) return
-    let cancelled = false
-
-    void (async () => {
-      if (!user?.id) {
-        if (!cancelled) {
-          dispatchWallet({ type: 'hydrate', state: { balance: INITIAL_BALANCE, portfolio: {} } })
-          setWalletReady(false)
-        }
-        return
-      }
-      let next: WalletState = { balance: INITIAL_BALANCE, portfolio: {} }
-      try {
-        const raw = localStorage.getItem(localProgressKeys.investWallet(user.id))
-        if (raw !== null) {
-          const parsed: unknown = JSON.parse(raw)
-          if (
-            parsed &&
-            typeof parsed === 'object' &&
-            typeof (parsed as WalletState).balance === 'number' &&
-            Number.isFinite((parsed as WalletState).balance) &&
-            typeof (parsed as WalletState).portfolio === 'object' &&
-            (parsed as WalletState).portfolio !== null
-          ) {
-            const p = parsed as WalletState
-            const portfolio: Portfolio = {}
-            for (const [id, shares] of Object.entries(p.portfolio)) {
-              if (typeof shares === 'number' && Number.isFinite(shares) && shares > 0) {
-                portfolio[id] = Math.floor(shares)
-              }
-            }
-            next = { balance: Math.max(0, p.balance), portfolio }
-          }
-        }
-      } catch {
-        /* corrupt / private mode: fall back to a fresh wallet */
-      }
-      if (!cancelled) {
-        dispatchWallet({ type: 'hydrate', state: next })
-        setWalletReady(true)
-      }
-    })()
-
-    return () => {
-      cancelled = true
+    if (!user?.id || !learnPersistReady) return
+    try {
+      localStorage.setItem(localProgressKeys.learnCompletedStories(user.id), JSON.stringify(completedStoryIds))
+    } catch {
+      /* quota / private mode */
     }
-  }, [user?.id, authLoading])
+    if (progressSynced) void saveProgress(user.id, { completed_stories: completedStoryIds })
+  }, [user?.id, completedStoryIds, learnPersistReady, progressSynced])
 
-  /** Persist the wallet on every change, once it has been hydrated for this user. */
+  // Persist lesson streak.
+  useEffect(() => {
+    if (!user?.id || !learnPersistReady) return
+    try {
+      localStorage.setItem(localProgressKeys.learnStreak(user.id), JSON.stringify(learnStreak))
+    } catch {
+      /* quota / private mode */
+    }
+    if (progressSynced) void saveProgress(user.id, { learn_streak: learnStreak })
+  }, [user?.id, learnStreak, learnPersistReady, progressSynced])
+
+  // Persist the paper-trading wallet.
   useEffect(() => {
     if (!user?.id || !walletReady) return
     try {
@@ -234,7 +295,8 @@ export default function App() {
     } catch {
       /* quota / private mode */
     }
-  }, [user?.id, balance, portfolio, walletReady])
+    if (progressSynced) void saveProgress(user.id, { wallet: { balance, portfolio } })
+  }, [user?.id, balance, portfolio, walletReady, progressSynced])
 
   useEffect(() => {
     if (!isLoggedIn) return
@@ -338,6 +400,12 @@ export default function App() {
 
   const completeLesson = (lessonId: string) => {
     setCompletedLessonIds((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]))
+    setLearnStreak((prev) => bumpLearnStreak(prev))
+  }
+
+  const completeStory = (storyId: string) => {
+    setCompletedStoryIds((prev) => (prev.includes(storyId) ? prev : [...prev, storyId]))
+    setLearnStreak((prev) => bumpLearnStreak(prev))
   }
 
   const buy = useCallback((stockId: string, price: number) => {
@@ -465,6 +533,9 @@ export default function App() {
                 onAddXp={addXp}
                 completedLessonIds={completedLessonIds}
                 onCompleteLesson={completeLesson}
+                completedStoryIds={completedStoryIds}
+                onCompleteStory={completeStory}
+                streakDays={displayLearnStreak(learnStreak)}
               />
             ) : null}
             {tab === 'invest' ? (
@@ -477,7 +548,9 @@ export default function App() {
                 onSell={sell}
               />
             ) : null}
-            {tab === 'community' ? <Community userId={user.id} userXp={xp} youDisplayName={displayName} /> : null}
+            {tab === 'community' ? (
+              <Community userId={user.id} userXp={xp} youDisplayName={displayName} onAddXp={addXp} />
+            ) : null}
             {tab === 'profile' ? <Profile xp={xp} portfolioValue={portfolioValue} /> : null}
           </motion.div>
         </AnimatePresence>

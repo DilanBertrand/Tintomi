@@ -47,8 +47,43 @@ function mapProfile(row: Record<string, unknown>): ProfileRow {
     login_streak: typeof row.login_streak === 'number' ? row.login_streak : Number(row.login_streak) || 1,
     last_streak_date: (row.last_streak_date as string) ?? null,
     is_pro: row.is_pro === true,
+    completed_lessons: toStringArray(row.completed_lessons),
+    completed_stories: toStringArray(row.completed_stories),
+    learn_streak: toLearnStreak(row.learn_streak),
+    wallet: toWallet(row.wallet),
     updated_at: String(row.updated_at ?? ''),
   }
+}
+
+/** Supabase returns jsonb already parsed; these coerce it defensively. */
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((v): v is string => typeof v === 'string')
+}
+
+function toLearnStreak(value: unknown): ProfileRow['learn_streak'] {
+  if (!value || typeof value !== 'object') return null
+  const v = value as { streak?: unknown; lastStreakDate?: unknown }
+  if (typeof v.streak !== 'number' || !Number.isFinite(v.streak)) return null
+  return {
+    streak: Math.max(0, Math.floor(v.streak)),
+    lastStreakDate: typeof v.lastStreakDate === 'string' ? v.lastStreakDate : null,
+  }
+}
+
+function toWallet(value: unknown): ProfileRow['wallet'] {
+  if (!value || typeof value !== 'object') return null
+  const v = value as { balance?: unknown; portfolio?: unknown }
+  if (typeof v.balance !== 'number' || !Number.isFinite(v.balance)) return null
+  const portfolio: Record<string, number> = {}
+  if (v.portfolio && typeof v.portfolio === 'object') {
+    for (const [id, shares] of Object.entries(v.portfolio as Record<string, unknown>)) {
+      if (typeof shares === 'number' && Number.isFinite(shares) && shares > 0) {
+        portfolio[id] = Math.floor(shares)
+      }
+    }
+  }
+  return { balance: Math.max(0, v.balance), portfolio }
 }
 
 export async function fetchProfile(userId: string): Promise<ProfileRow | null> {

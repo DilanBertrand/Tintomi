@@ -17,11 +17,9 @@ import {
 import { storyLessons, XP_PER_STORY, type StoryLesson } from '../data/stories'
 import { themeForLevel } from '../learn-themes'
 import { localProgressKeys } from '../lib/localProgress'
-import { addLocalDays, toLocalYmd } from '../lib/streak'
-import { updateUserXP } from '../lib/updateUserXP'
 import { fadeSlideUp } from '../motion/variants'
 
-/** Total XP and completed lesson IDs persist in the browser via `App` and `lib/localProgress.ts`. */
+/** XP, lessons, stories, and streak are owned and persisted by `App` (localStorage + Supabase). */
 
 type LearnProps = {
   userId: string
@@ -29,6 +27,9 @@ type LearnProps = {
   onAddXp: (amount: number) => Promise<void> | void
   completedLessonIds: string[]
   onCompleteLesson: (lessonId: string) => void
+  completedStoryIds: string[]
+  onCompleteStory: (storyId: string) => void
+  streakDays: number
 }
 
 function isLevelComplete(levelIndex: number, done: Set<string>) {
@@ -88,54 +89,8 @@ function readWeakSpots(userId: string): string[] {
   }
 }
 
-type LearnStreak = { streak: number; lastStreakDate: string | null }
-
-function readLearnStreak(userId: string): LearnStreak {
-  try {
-    const raw = localStorage.getItem(localProgressKeys.learnStreak(userId))
-    const parsed = raw ? (JSON.parse(raw) as Partial<LearnStreak>) : null
-    if (parsed && typeof parsed.streak === 'number') {
-      return { streak: parsed.streak, lastStreakDate: parsed.lastStreakDate ?? null }
-    }
-  } catch {
-    // fall through
-  }
-  return { streak: 0, lastStreakDate: null }
-}
-
-/** Streak counts consecutive days with at least one completed lesson. */
-function bumpLearnStreak(prev: LearnStreak, now: Date = new Date()): LearnStreak {
-  const today = toLocalYmd(now)
-  const yesterday = toLocalYmd(addLocalDays(now, -1))
-  if (prev.lastStreakDate === today) return prev
-  if (prev.lastStreakDate === yesterday) return { streak: prev.streak + 1, lastStreakDate: today }
-  return { streak: 1, lastStreakDate: today }
-}
-
-/** Days-with-a-lesson streak, showing 0 if the chain is already broken. */
-function displayStreak(s: LearnStreak, now: Date = new Date()): number {
-  if (!s.lastStreakDate) return 0
-  const today = toLocalYmd(now)
-  const yesterday = toLocalYmd(addLocalDays(now, -1))
-  if (s.lastStreakDate === today || s.lastStreakDate === yesterday) return s.streak
-  return 0
-}
-
 const SPEED_BONUS_WINDOW_MS = 5000
 const REVIEW_SESSION_SIZE = 3
-
-function readCompletedStories(userId: string): string[] {
-  try {
-    const raw = localStorage.getItem(localProgressKeys.learnCompletedStories(userId))
-    if (raw !== null) {
-      const parsed: unknown = JSON.parse(raw)
-      if (Array.isArray(parsed)) return parsed.filter((v): v is string => typeof v === 'string')
-    }
-  } catch {
-    // fall through
-  }
-  return []
-}
 
 const levelShell =
   'rounded-xl border border-[#232b25] bg-transparent p-4 transition-all duration-300 hover:-translate-y-1 hover:border-[#232b25] '
@@ -146,6 +101,9 @@ export function Learn({
   onAddXp,
   completedLessonIds,
   onCompleteLesson,
+  completedStoryIds,
+  onCompleteStory,
+  streakDays,
 }: LearnProps) {
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -160,10 +118,8 @@ export function Learn({
   const [correctCount, setCorrectCount] = useState(0)
   const [completedTrackTitle, setCompletedTrackTitle] = useState('')
   const [weakSpots, setWeakSpots] = useState<string[]>(() => readWeakSpots(userId))
-  const [learnStreak, setLearnStreak] = useState<LearnStreak>(() => readLearnStreak(userId))
   const [speedBonus, setSpeedBonus] = useState(0)
   const [tab, setTab] = useState<'quizzes' | 'lessons'>('quizzes')
-  const [storiesDone, setStoriesDone] = useState<string[]>(() => readCompletedStories(userId))
   const [story, setStory] = useState<StoryLesson | null>(null)
   const [storyPage, setStoryPage] = useState(0)
   const [storyReward, setStoryReward] = useState<number | null>(null)
@@ -171,8 +127,6 @@ export function Learn({
 
   useEffect(() => {
     setWeakSpots(readWeakSpots(userId))
-    setLearnStreak(readLearnStreak(userId))
-    setStoriesDone(readCompletedStories(userId))
   }, [userId])
 
   const openStory = (s: StoryLesson) => {
@@ -183,27 +137,13 @@ export function Learn({
 
   const finishStory = async () => {
     if (!story) return
-    const firstTime = !storiesDone.includes(story.id)
+    const firstTime = !completedStoryIds.includes(story.id)
     let earned = 0
     if (firstTime) {
-      const next = [...storiesDone, story.id]
-      setStoriesDone(next)
-      try {
-        localStorage.setItem(localProgressKeys.learnCompletedStories(userId), JSON.stringify(next))
-      } catch {
-        // storage full/blocked: state still updates for this session
-      }
       earned = XP_PER_STORY
-      await updateUserXP(earned)
+      // App owns story completion + streak + XP persistence (local + DB).
+      onCompleteStory(story.id)
       await onAddXp(earned)
-
-      const nextStreak = bumpLearnStreak(learnStreak)
-      setLearnStreak(nextStreak)
-      try {
-        localStorage.setItem(localProgressKeys.learnStreak(userId), JSON.stringify(nextStreak))
-      } catch {
-        // storage full/blocked: state still updates for this session
-      }
     }
     setStoryReward(earned)
   }
@@ -219,7 +159,6 @@ export function Learn({
 
   const xpIntoLevel = xp % 100
   const nextLevelXp = 100
-  const streakDays = displayStreak(learnStreak)
 
   const closeLesson = () => {
     setSession(null)
@@ -299,11 +238,6 @@ export function Learn({
       if (answeredAt - questionShownAtRef.current <= SPEED_BONUS_WINDOW_MS) {
         setSpeedBonus((b) => b + XP_SPEED_BONUS)
       }
-      // Per-answer XP only counts the first time through a lesson; replays
-      // and weak-spot reviews pay nothing (no infinite XP farming).
-      if (!session.review && !done.has(session.id)) {
-        void updateUserXP(10)
-      }
       // Answered right: this question is no longer a weak spot.
       if (weakSpots.includes(currentQ.id)) {
         persistWeakSpots(weakSpots.filter((id) => id !== currentQ.id))
@@ -345,17 +279,9 @@ export function Learn({
     }
     if (!done.has(session.id)) {
       const bonus = (perfect ? XP_PERFECT_BONUS : 0) + speedBonus
-      await updateUserXP(10)
       await onAddXp(XP_PER_LESSON + bonus)
+      // App owns lesson completion + streak bump + XP persistence (local + DB).
       onCompleteLesson(session.id)
-
-      const nextStreak = bumpLearnStreak(learnStreak)
-      setLearnStreak(nextStreak)
-      try {
-        localStorage.setItem(localProgressKeys.learnStreak(userId), JSON.stringify(nextStreak))
-      } catch {
-        // storage blocked: streak still shown this session
-      }
 
       // Completing this lesson may finish its whole track — celebrate that.
       const owningLevel = levels.find((lvl) => lvl.lessons.some((l) => l.id === session.id))
@@ -405,7 +331,7 @@ export function Learn({
             </div>
             <div>
               <p className="font-mono text-3xl font-semibold text-[#e9ece8]">
-                {storiesDone.length}
+                {completedStoryIds.length}
                 <span className="text-base text-[#a7b0a8]"> / {storyLessons.length}</span>
               </p>
               <p className="text-xs text-[#a7b0a8]">Lessons done</p>
@@ -459,7 +385,7 @@ export function Learn({
         {tab === 'lessons' ? (
           <div className="space-y-4">
             {storyLessons.map((s) => {
-              const read = storiesDone.includes(s.id)
+              const read = completedStoryIds.includes(s.id)
               return (
                 <div key={s.id} className={levelShell}>
                   <div className="flex flex-wrap items-center justify-between gap-3">

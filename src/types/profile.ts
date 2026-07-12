@@ -7,5 +7,9 @@ export type ProfileRow = {
   login_streak: number
   last_streak_date: string | null
   is_pro: boolean
+  completed_lessons: string[]
+  completed_stories: string[]
+  learn_streak: { streak: number; lastStreakDate: string | null } | null
+  wallet: { balance: number; portfolio: Record<string, number> } | null
   updated_at: string
 }

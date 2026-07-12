@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { localProgressKeys } from '../lib/localProgress'
 import { updateProfileFields } from '../lib/profiles'
 import { supabase } from '../lib/supabase'
-import { updateUserXP } from '../lib/updateUserXP'
 import { isUsernameRestricted } from '../utils/profanityFilter'
 
 type LeaderRow = { name: string; xp: number; rank: number; you?: boolean }
@@ -103,9 +102,10 @@ type CommunityProps = {
   userId: string
   userXp: number
   youDisplayName: string
+  onAddXp: (amount: number) => Promise<void> | void
 }
 
-export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
+export function Community({ userId, userXp, youDisplayName, onAddXp }: CommunityProps) {
   const { user, profile, refreshProfile } = useAuth()
   const [selectedOption, setSelectedOption] = useState<number | null>(() => readPollVote(userId))
   const [isJoined, setIsJoined] = useState(() => readChallengeJoined(userId))
@@ -350,7 +350,7 @@ export function Community({ userId, userXp, youDisplayName }: CommunityProps) {
             onClick={async () => {
               if (isJoined) return
               setIsJoined(true)
-              await updateUserXP(20)
+              await onAddXp(20)
             }}
             className={`mt-4 min-h-12 w-full rounded-lg py-3 text-sm font-semibold tracking-wide transition-opacity duration-200 ${
               isJoined
