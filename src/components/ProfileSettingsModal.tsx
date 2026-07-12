@@ -74,7 +74,7 @@ export function ProfileSettingsModal({ initialFullName, initialUsername, onClose
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 16 }}
         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-md rounded-t-3xl border border-[#232b25] bg-[#0a0f1a] p-6 sm:rounded-3xl"
+        className="relative z-10 max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-[#232b25] bg-[#0a0f1a] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:max-h-[85dvh] sm:rounded-3xl"
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
