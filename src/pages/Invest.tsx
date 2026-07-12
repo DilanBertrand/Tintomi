@@ -129,6 +129,8 @@ export function Invest({ userId, balance, portfolio, live, chartSeries, onBuy, o
         </p>
       </motion.header>
 
+      <TraderLeaderboard userId={userId} live={live} />
+
       <Card title="Portfolio" subtitle="Cash + holdings" accent="neon" glowRgb="0, 255, 136">
         <div className="grid grid-cols-2 gap-3">
           <div className={subPanel}>
@@ -162,8 +164,6 @@ export function Invest({ userId, balance, portfolio, live, chartSeries, onBuy, o
           ))}
         </div>
       </motion.div>
-
-      <TraderLeaderboard userId={userId} live={live} />
 
       <Card title="Disclosure" subtitle="Not real markets" accent="neutral" glowRgb="160, 165, 175">
         <p className="text-sm leading-relaxed text-[#6b756c]">
