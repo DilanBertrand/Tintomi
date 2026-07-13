@@ -129,6 +129,7 @@ function PostRow({
   const [replyOpen, setReplyOpen] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [sending, setSending] = useState(false)
+  const [repliesOpen, setRepliesOpen] = useState(false)
   const inQueue = isAdmin && post.status === 'pending'
 
   // Approved replies plus the viewer's own pending/rejected replies to this post.
@@ -136,6 +137,10 @@ function PostRow({
     ...(replies ?? []),
     ...(myReplies ?? []).filter((r) => r.status !== 'approved'),
   ]
+  // Auto-expand when the viewer has a pending/rejected reply so they can see
+  // its moderation status without hunting for it.
+  const hasMyPending = (myReplies ?? []).some((r) => r.status !== 'approved')
+  const repliesVisible = repliesOpen || hasMyPending
 
   const submitReply = async () => {
     if (!onReply || sending || replyText.trim().length === 0) return
@@ -214,7 +219,7 @@ function PostRow({
                 className="flex items-center gap-1.5 text-xs transition-colors hover:text-[#2979ff]"
               >
                 <MessageCircle className="h-4 w-4" aria-hidden />
-                {(replies?.length ?? 0) > 0 ? replies?.length : 'Reply'}
+                Reply
               </button>
             </div>
           ) : null}
@@ -252,16 +257,30 @@ function PostRow({
           ) : null}
 
           {shownReplies.length > 0 ? (
-            <div className="mt-2 border-l-2 border-[#232b25] pl-3">
-              {shownReplies.map((r) => (
-                <ReplyRow
-                  key={r.id}
-                  reply={r}
-                  you={r.user_id === userId}
-                  onDelete={r.user_id === userId ? onDeleteReply : undefined}
-                />
-              ))}
-            </div>
+            <>
+              <button
+                type="button"
+                onClick={() => setRepliesOpen((v) => !v)}
+                className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-[#5c665e] transition-colors hover:text-[#a7b0a8]"
+              >
+                <span className="h-px w-6 bg-[#232b25]" aria-hidden />
+                {repliesVisible
+                  ? 'Hide replies'
+                  : `View ${shownReplies.length} ${shownReplies.length === 1 ? 'reply' : 'replies'}`}
+              </button>
+              {repliesVisible ? (
+                <div className="mt-2 border-l-2 border-[#232b25] pl-3">
+                  {shownReplies.map((r) => (
+                    <ReplyRow
+                      key={r.id}
+                      reply={r}
+                      you={r.user_id === userId}
+                      onDelete={r.user_id === userId ? onDeleteReply : undefined}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </>
           ) : null}
         </div>
       </div>
