@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Check, Heart, ImagePlus, MessageCircle, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Card } from './Card'
+import { useAuth } from '../contexts/AuthContext'
 import {
   createPost,
   createReply,
@@ -16,6 +17,8 @@ import {
   type LikeInfo,
   type Post,
 } from '../lib/posts'
+import { updateProfileFields } from '../lib/profiles'
+import { isUsernameRestricted } from '../utils/profanityFilter'
 
 const MAX_POST_LENGTH = 1000
 
@@ -107,11 +110,13 @@ function PostRow({
   like,
   replies,
   myReplies,
+  needsUsername,
   onReview,
   onDelete,
   onDeleteReply,
   onToggleLike,
   onReply,
+  onRequestUsername,
 }: {
   post: Post
   you: boolean
@@ -120,11 +125,13 @@ function PostRow({
   like?: LikeInfo
   replies?: Post[]
   myReplies?: Post[]
+  needsUsername?: boolean
   onReview?: (id: string, status: 'approved' | 'rejected') => void
   onDelete?: (id: string) => void
   onDeleteReply?: (id: string) => void
   onToggleLike?: (id: string, liked: boolean) => void
   onReply?: (parentId: string, text: string) => Promise<void>
+  onRequestUsername?: () => void
 }) {
   const [replyOpen, setReplyOpen] = useState(false)
   const [replyText, setReplyText] = useState('')
@@ -215,7 +222,7 @@ function PostRow({
               </button>
               <button
                 type="button"
-                onClick={() => setReplyOpen((v) => !v)}
+                onClick={() => (needsUsername ? onRequestUsername?.() : setReplyOpen((v) => !v))}
                 className="flex items-center gap-1.5 text-xs transition-colors hover:text-[#2979ff]"
               >
                 <MessageCircle className="h-4 w-4" aria-hidden />
@@ -294,6 +301,7 @@ function PostRow({
  * see their own pending/rejected items inline; others only see approved.
  */
 export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
+  const { profile, refreshProfile } = useAuth()
   const [approved, setApproved] = useState<Post[]>([])
   const [mine, setMine] = useState<Post[]>([])
   const [pendingQueue, setPendingQueue] = useState<Post[]>([])
@@ -307,6 +315,44 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // A username is required before posting or replying, so every message in
+  // the feed has a real handle attached (not the generic "member" fallback).
+  const hasUsername = !!profile?.username?.trim()
+  const [usernameInput, setUsernameInput] = useState('')
+  const [usernameSaving, setUsernameSaving] = useState(false)
+  const [usernameError, setUsernameError] = useState('')
+  const usernameInputRef = useRef<HTMLInputElement>(null)
+  const requestUsername = () => {
+    usernameInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    usernameInputRef.current?.focus()
+  }
+
+  const saveUsername = async () => {
+    const trimmed = usernameInput.trim()
+    if (!trimmed) {
+      setUsernameError('Choose a username first.')
+      return
+    }
+    if (isUsernameRestricted(trimmed)) {
+      setUsernameError('That username contains restricted language or symbols.')
+      return
+    }
+    setUsernameSaving(true)
+    setUsernameError('')
+    const { error: err } = await updateProfileFields(userId, {
+      full_name: profile?.full_name ?? null,
+      username: trimmed,
+    })
+    if (err) {
+      const msg = String(err).toLowerCase()
+      setUsernameError(msg.includes('duplicate') || msg.includes('23505') ? 'That username is already taken.' : err)
+      setUsernameSaving(false)
+      return
+    }
+    await refreshProfile()
+    setUsernameSaving(false)
+  }
 
   const refresh = useCallback(async () => {
     const [a, m, q] = await Promise.all([
@@ -403,59 +449,89 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
   return (
     <div className="space-y-6">
       <Card title="New post" subtitle="Wins, questions, ideas — reviewed before they go live">
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value.slice(0, MAX_POST_LENGTH))}
-          placeholder="Share a win, a question, or a money lesson…"
-          rows={3}
-          className="w-full resize-y rounded-lg border border-[#232b25] bg-[#0f1412] p-3 text-sm text-[#e9ece8] placeholder-[#5c665e] outline-none transition-colors focus:border-[#2979ff]"
-        />
-        {imagePreview ? (
-          <div className="relative mt-2 w-fit">
-            <img src={imagePreview} alt="" className="max-h-48 rounded-xl border border-[#232b25]" />
-            <button
-              type="button"
-              onClick={() => attachImage(null)}
-              aria-label="Remove image"
-              className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#0f1412] text-[#e9ece8] shadow"
-            >
-              <X className="h-4 w-4" aria-hidden />
-            </button>
-          </div>
-        ) : null}
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => attachImage(e.target.files?.[0] ?? null)}
+        {hasUsername ? (
+          <>
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value.slice(0, MAX_POST_LENGTH))}
+              placeholder="Share a win, a question, or a money lesson…"
+              rows={3}
+              className="w-full resize-y rounded-lg border border-[#232b25] bg-[#0f1412] p-3 text-sm text-[#e9ece8] placeholder-[#5c665e] outline-none transition-colors focus:border-[#2979ff]"
             />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              aria-label="Attach an image"
-              className="flex min-h-10 items-center gap-1.5 rounded-lg border border-[#232b25] bg-transparent px-3 py-2 text-xs font-medium text-[#a7b0a8] transition-colors hover:bg-[#1a221c]"
-            >
-              <ImagePlus className="h-4 w-4" aria-hidden />
-              Photo
-            </button>
-            <p className="text-xs text-[#5c665e]">
-              {draft.length} / {MAX_POST_LENGTH}
-            </p>
+            {imagePreview ? (
+              <div className="relative mt-2 w-fit">
+                <img src={imagePreview} alt="" className="max-h-48 rounded-xl border border-[#232b25]" />
+                <button
+                  type="button"
+                  onClick={() => attachImage(null)}
+                  aria-label="Remove image"
+                  className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#0f1412] text-[#e9ece8] shadow"
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+            ) : null}
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => attachImage(e.target.files?.[0] ?? null)}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Attach an image"
+                  className="flex min-h-10 items-center gap-1.5 rounded-lg border border-[#232b25] bg-transparent px-3 py-2 text-xs font-medium text-[#a7b0a8] transition-colors hover:bg-[#1a221c]"
+                >
+                  <ImagePlus className="h-4 w-4" aria-hidden />
+                  Photo
+                </button>
+                <p className="text-xs text-[#5c665e]">
+                  {draft.length} / {MAX_POST_LENGTH}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void submit()}
+                disabled={posting || draft.trim().length === 0}
+                className="min-h-10 rounded-full bg-[#e9ece8] px-6 py-2 text-sm font-semibold text-[#0f1412] transition-opacity duration-200 hover:opacity-90 disabled:opacity-50"
+              >
+                {posting ? 'Posting…' : 'Post'}
+              </button>
+            </div>
+            {notice ? <p className="mt-2 text-xs text-[#2979ff]">{notice}</p> : null}
+            {error ? <p className="mt-2 text-xs text-[#ff6b5e]">{error}</p> : null}
+          </>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-[#a7b0a8]">Choose a username before you can post or reply.</p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                ref={usernameInputRef}
+                type="text"
+                value={usernameInput}
+                onChange={(e) => {
+                  setUsernameInput(e.target.value.replace(/\s/g, ''))
+                  setUsernameError('')
+                }}
+                placeholder="unique_handle"
+                className="min-h-10 flex-1 rounded-lg border border-[#232b25] bg-[#0f1412] px-3 text-sm text-[#e9ece8] placeholder-[#5c665e] outline-none focus:border-[#2979ff]"
+              />
+              <button
+                type="button"
+                onClick={() => void saveUsername()}
+                disabled={usernameSaving || usernameInput.trim().length === 0}
+                className="min-h-10 rounded-full bg-[#e9ece8] px-5 text-sm font-semibold text-[#0f1412] transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {usernameSaving ? 'Saving…' : 'Save username'}
+              </button>
+            </div>
+            {usernameError ? <p className="text-xs text-[#ff6b5e]">{usernameError}</p> : null}
           </div>
-          <button
-            type="button"
-            onClick={() => void submit()}
-            disabled={posting || draft.trim().length === 0}
-            className="min-h-10 rounded-full bg-[#e9ece8] px-6 py-2 text-sm font-semibold text-[#0f1412] transition-opacity duration-200 hover:opacity-90 disabled:opacity-50"
-          >
-            {posting ? 'Posting…' : 'Post'}
-          </button>
-        </div>
-        {notice ? <p className="mt-2 text-xs text-[#2979ff]">{notice}</p> : null}
-        {error ? <p className="mt-2 text-xs text-[#ff6b5e]">{error}</p> : null}
+        )}
       </Card>
 
       {isAdmin && pendingQueue.length > 0 ? (
@@ -497,10 +573,12 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
                 like={likes[p.id]}
                 replies={repliesByParent(p.id)}
                 myReplies={myRepliesByParent(p.id)}
+                needsUsername={!hasUsername}
                 onDelete={p.user_id === userId ? handleDelete : undefined}
                 onDeleteReply={handleDelete}
                 onToggleLike={handleToggleLike}
                 onReply={handleReply}
+                onRequestUsername={requestUsername}
               />
             ))}
           </AnimatePresence>

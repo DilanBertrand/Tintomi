@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { containsBannedContent } from '../utils/profanityFilter'
 
 export type PostStatus = 'pending' | 'approved' | 'rejected'
 
@@ -139,6 +140,7 @@ export async function createPost(userId: string, content: string, imageFile: Fil
   const text = content.trim()
   if (text.length < 1) return 'Write something first.'
   if (text.length > 1000) return 'Posts are capped at 1000 characters.'
+  if (containsBannedContent(text)) return 'That post contains language that isn\'t allowed here.'
 
   let imageUrl: string | null = null
   if (imageFile) {
@@ -174,6 +176,7 @@ export async function createReply(userId: string, parentId: string, content: str
   const text = content.trim()
   if (text.length < 1) return 'Write a reply first.'
   if (text.length > 1000) return 'Replies are capped at 1000 characters.'
+  if (containsBannedContent(text)) return 'That reply contains language that isn\'t allowed here.'
   const { error } = await supabase
     .from('posts')
     .insert({ user_id: userId, parent_id: parentId, content: text })
