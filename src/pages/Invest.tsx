@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Card } from '../components/Card'
 import { StaggerPage } from '../components/StaggerPage'
+import { Sparkline } from '../components/Sparkline'
 import { StockCard } from '../components/StockCard'
 import { TraderLeaderboard } from '../components/TraderLeaderboard'
 import { stocks } from '../data/stocks'
@@ -18,6 +19,8 @@ const SPARK_TICK_MS = 3000
 
 type InvestProps = {
   userId: string
+  /** Daily net-worth snapshots recorded by App (this device, up to 90 days). */
+  netWorthHistory: { date: string; value: number }[]
   balance: number
   portfolio: Portfolio
   live: LivePrices
@@ -44,7 +47,16 @@ function initWatchLines(chartSeries: PriceHistory, live: LivePrices): Record<str
   return o
 }
 
-export function Invest({ userId, balance, portfolio, live, chartSeries, onBuy, onSell }: InvestProps) {
+export function Invest({
+  userId,
+  netWorthHistory,
+  balance,
+  portfolio,
+  live,
+  chartSeries,
+  onBuy,
+  onSell,
+}: InvestProps) {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
@@ -142,6 +154,41 @@ export function Invest({ userId, balance, portfolio, live, chartSeries, onBuy, o
             <p className="mt-1 font-mono text-lg font-bold text-[#2979ff]">${portfolioValue.toFixed(2)}</p>
           </div>
         </div>
+        {netWorthHistory.length >= 2 ? (
+          <div className="mt-4">
+            <div className="flex items-baseline justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-tighter text-[#6b756c]">
+                Net worth · last {netWorthHistory.length} days
+              </p>
+              {(() => {
+                const first = netWorthHistory[0].value
+                const last = netWorthHistory[netWorthHistory.length - 1].value
+                const pct = first > 0 ? ((last - first) / first) * 100 : 0
+                const up = pct >= 0
+                return (
+                  <p className={`font-mono text-xs font-semibold ${up ? 'text-[#00d18f]' : 'text-[#ff6b5e]'}`}>
+                    {up ? '+' : ''}
+                    {pct.toFixed(2)}%
+                  </p>
+                )
+              })()}
+            </div>
+            <Sparkline
+              values={netWorthHistory.map((e) => e.value)}
+              height={56}
+              fluid
+              prominent
+              positive={
+                netWorthHistory[netWorthHistory.length - 1].value >= netWorthHistory[0].value
+              }
+              className="mt-2"
+            />
+          </div>
+        ) : (
+          <p className="mt-4 text-xs text-[#5c665e]">
+            Your net-worth chart starts building from today — check back tomorrow.
+          </p>
+        )}
       </Card>
 
       <motion.div variants={fadeSlideUp}>

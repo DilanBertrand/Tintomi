@@ -9,4 +9,6 @@ export const localProgressKeys = {
   learnWeakSpots: (userId: string) => `tintomi:v1:learn:weakSpots:${userId}`,
   learnStreak: (userId: string) => `tintomi:v1:learn:streak:${userId}`,
   investWallet: (userId: string) => `tintomi:v1:invest:wallet:${userId}`,
+  investHistory: (userId: string) => `tintomi:v1:invest:history:${userId}`,
+  dailyBonus: (userId: string) => `tintomi:v1:learn:dailyBonus:${userId}`,
 } as const

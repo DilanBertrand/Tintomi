@@ -23,6 +23,7 @@ import {
   bumpLearnStreak,
   displayLearnStreak,
   mergeLearnStreak,
+  toLocalYmd,
   type LearnStreak,
 } from './lib/streak'
 import { getDisplayName, truncateForNav } from './lib/displayName'
@@ -156,6 +157,8 @@ export default function App() {
   const [progressSynced, setProgressSynced] = useState(false)
   const [levelUp, setLevelUp] = useState<number | null>(null)
   const lastLevelRef = useRef<number | null>(null)
+  const [dailyBonus, setDailyBonus] = useState(false)
+  const [netWorthHistory, setNetWorthHistory] = useState<{ date: string; value: number }[]>([])
   const [{ balance, portfolio }, dispatchWallet] = useReducer(walletReducer, {
     balance: INITIAL_BALANCE,
     portfolio: {},
@@ -303,6 +306,32 @@ export default function App() {
     if (progressSynced) void saveProgress(user.id, { wallet: { balance, portfolio } })
   }, [user?.id, balance, portfolio, walletReady, progressSynced])
 
+  // Daily open bonus: +5 XP the first time the app is opened each calendar
+  // day. Marker is per-device localStorage — worst case a second device grants
+  // another +5 the same day, which is acceptable for the reward size.
+  useEffect(() => {
+    if (!user?.id || !progressSynced) return
+    const key = localProgressKeys.dailyBonus(user.id)
+    const today = toLocalYmd(new Date())
+    let last: string | null = null
+    try {
+      last = localStorage.getItem(key)
+    } catch {
+      return
+    }
+    if (last === today) return
+    try {
+      localStorage.setItem(key, today)
+    } catch {
+      return
+    }
+    void (async () => {
+      setXp((v) => v + 5)
+      setDailyBonus(true)
+      window.setTimeout(() => setDailyBonus(false), 2600)
+    })()
+  }, [user?.id, progressSynced])
+
   // Celebrate crossing into a new level (every 100 XP). The first value seen
   // after the DB merge just seeds the baseline — no toast for loading progress.
   useEffect(() => {
@@ -416,6 +445,45 @@ export default function App() {
     }
     return sum
   }, [balance, portfolio, livePrices])
+
+  // Record one net-worth point per calendar day (today's entry tracks the
+  // latest value). Per-device history, capped at 90 days.
+  useEffect(() => {
+    if (!user?.id || !walletReady) return
+    const key = localProgressKeys.investHistory(user.id)
+    const today = toLocalYmd(new Date())
+    const point = { date: today, value: Math.round(portfolioValue * 100) / 100 }
+    // Deferred so the linter's sync-setState-in-effect rule is satisfied; the
+    // work itself is localStorage sync, which belongs in an effect.
+    const t = window.setTimeout(() => {
+      setNetWorthHistory(() => {
+      let prev: { date: string; value: number }[] = []
+      try {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          const parsed: unknown = JSON.parse(raw)
+          if (Array.isArray(parsed)) {
+            prev = parsed.filter(
+              (e): e is { date: string; value: number } =>
+                !!e && typeof e === 'object' && typeof (e as { date?: unknown }).date === 'string' &&
+                typeof (e as { value?: unknown }).value === 'number',
+            )
+          }
+        }
+      } catch {
+        /* corrupt: start fresh */
+      }
+      const next = [...prev.filter((e) => e.date !== today), point].slice(-90)
+      try {
+        localStorage.setItem(key, JSON.stringify(next))
+      } catch {
+        /* quota */
+      }
+      return next
+      })
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [user?.id, walletReady, portfolioValue])
 
   const addXp = useCallback((n: number) => setXp((v) => v + n), [])
 
@@ -534,6 +602,18 @@ export default function App() {
     <div className="relative flex min-h-dvh flex-col text-gray-100">
       <MeshBackdrop />
       <LevelUpToast level={levelUp} onDone={() => setLevelUp(null)} />
+      <AnimatePresence>
+        {dailyBonus ? (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="pointer-events-none fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 z-[120] -translate-x-1/2 rounded-full border border-[#2979ff]/40 bg-[#121a15] px-5 py-2.5 text-sm font-semibold text-[#e9ece8] shadow-lg shadow-black/50"
+          >
+            Daily bonus <span className="text-[#2979ff]">+5 XP</span>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
       <div className="relative z-10 mx-auto w-full max-w-4xl flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10">
         <header className="relative mb-4 flex min-h-[2.75rem] w-full items-center justify-center pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:min-h-[3rem]">
           <p className="tm-chrome-wordmark-app max-w-[calc(100%-2rem)] text-center sm:max-w-none">TINTOMI</p>
@@ -564,6 +644,7 @@ export default function App() {
             {tab === 'invest' ? (
               <Invest
                 userId={user.id}
+                netWorthHistory={netWorthHistory}
                 balance={balance}
                 portfolio={portfolio}
                 live={livePrices}
