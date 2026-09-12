@@ -133,7 +133,8 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
         return
       }
       const uname = typeof data?.username === 'string' ? data.username.trim() : ''
-      setProfileLocked(!uname)
+      // A derived or legacy username that fails the filter must be changed before posting.
+      setProfileLocked(!uname || isUsernameRestricted(uname))
       setLockLoading(false)
     }
 

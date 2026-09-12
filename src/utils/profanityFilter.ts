@@ -99,7 +99,8 @@ const PROFANITY_WORDS = [
 
 const BANNED_WORDS = [...IMPERSONATION_WORDS, ...PROFANITY_WORDS] as const
 
-const USERNAME_ALLOWED_REGEX = /^[a-zA-Z0-9_]+$/
+// Single spaces allowed: signup derives names like "Bob green" from the email.
+const USERNAME_ALLOWED_REGEX = /^[a-zA-Z0-9_]+( [a-zA-Z0-9_]+)*$/
 
 function normalizeForComparison(value: string): string {
   return value.trim().toLowerCase()

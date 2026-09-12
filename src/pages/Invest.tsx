@@ -46,8 +46,27 @@ function isNewYorkWeekend(now = new Date()) {
   return day === 'Sat' || day === 'Sun'
 }
 
+/** Regular session: Mon-Fri 9:30-16:00 New York time (holidays come from the data feed's state). */
+function isWithinRegularHours(now = new Date()) {
+  if (isNewYorkWeekend(now)) return false
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  }).formatToParts(now)
+  const h = Number(parts.find((p) => p.type === 'hour')?.value ?? 0) % 24
+  const m = Number(parts.find((p) => p.type === 'minute')?.value ?? 0)
+  const mins = h * 60 + m
+  return mins >= 9 * 60 + 30 && mins < 16 * 60
+}
+
 function MarketClosedBanner({ state }: { state: string }) {
-  if (state === 'REGULAR') return null
+  // Trust the feed when it gives a definite answer; if it reports UNKNOWN
+  // (seen on some responses) fall back to the clock so we never show
+  // "closed" mid-session.
+  const open = state === 'REGULAR' || (state === 'UNKNOWN' && isWithinRegularHours())
+  if (open) return null
   const weekend = isNewYorkWeekend()
   return (
     <motion.div

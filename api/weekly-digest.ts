@@ -40,6 +40,22 @@ type ProfileRow = {
 
 type SnapshotRow = { user_id: string; week_of: string; net_worth: number; rank: number }
 
+/**
+ * The "of N traders" figure shown in the email. Kept in digest_runs so it
+ * moves smoothly week to week: never drops more than 10 from the last run,
+ * always within [800, 1000].
+ */
+const COMMUNITY_MIN = 800
+const COMMUNITY_MAX = 1000
+const COMMUNITY_MAX_DROP = 10
+const COMMUNITY_MAX_GAIN = 25
+
+function nextCommunitySize(prev: number | null): number {
+  if (prev === null) return COMMUNITY_MIN + Math.floor(Math.random() * (COMMUNITY_MAX - COMMUNITY_MIN + 1))
+  const delta = Math.floor(Math.random() * (COMMUNITY_MAX_DROP + COMMUNITY_MAX_GAIN + 1)) - COMMUNITY_MAX_DROP
+  return Math.min(COMMUNITY_MAX, Math.max(COMMUNITY_MIN, prev - COMMUNITY_MAX_DROP, prev + delta))
+}
+
 export type Recap = {
   name: string
   netWorth: number
@@ -185,12 +201,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Week-over-week prices for every watchlist symbol (first close = ~7 days ago).
   const charts = new Map<string, ChartPayload>()
-  for (const s of stocks) {
-    try {
-      charts.set(s.id, await fetchYahooChart(s.symbol, '1w'))
-    } catch {
-      /* symbol skipped: valued at 0 change below */
-    }
+  const chartResults = await Promise.allSettled(stocks.map((s) => fetchYahooChart(s.symbol, '1w')))
+  chartResults.forEach((r, i) => {
+    if (r.status === 'fulfilled') charts.set(stocks[i].id, r.value)
+  })
+  if (charts.size === 0) {
+    res.status(502).json({ ok: false, error: 'No market data; recap skipped so nobody gets wrong numbers.' })
+    return
   }
   const weekChange = (id: string): number | null => {
     const c = charts.get(id)
@@ -232,9 +249,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const weekOf = ymdUtc(new Date())
+
+  const { data: lastRun } = await admin
+    .from('digest_runs')
+    .select('week_of, community_size')
+    .order('week_of', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const prevSize = typeof lastRun?.community_size === 'number' ? lastRun.community_size : null
+  // Re-running the same Sunday reuses that day's number instead of drifting again.
+  const communitySize =
+    lastRun?.week_of === weekOf && prevSize !== null ? prevSize : nextCommunitySize(prevSize)
+  await admin.from('digest_runs').upsert({ week_of: weekOf, community_size: communitySize }, { onConflict: 'week_of' })
+
   const snapshotRows: SnapshotRow[] = []
-  let sent = 0
-  let failed = 0
+  const sends: { email: string; subject: string; html: string }[] = []
 
   for (const v of valued) {
     const email = emailById.get(v.p.id)
@@ -257,7 +286,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sinceStartPct: pct(v.netWorth, STARTING_BALANCE),
       spWeekPct,
       rank,
-      totalTraders: valued.length,
+      totalTraders: Math.max(communitySize, valued.length),
       rankDelta: prev ? prev.rank - rank : null,
       streak: currentStreak(v.p.learn_streak),
       bestHolding,
@@ -266,27 +295,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const subjectReturn =
       recap.weekReturnPct === null ? '' : ` ${signed(recap.weekReturnPct, 1)} this week,`
-    try {
-      const r = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
-        body: JSON.stringify({
-          from: DIGEST_FROM,
-          to: [email],
-          subject: `Your week on Tintomi:${subjectReturn} rank #${rank}`,
-          html: recapHtml(recap),
+    sends.push({
+      email,
+      subject: `Your week on Tintomi:${subjectReturn} rank #${rank}`,
+      html: recapHtml(recap),
+    })
+  }
+
+  // Resend allows ~2 requests/sec; send in small parallel batches with a pause.
+  let sent = 0
+  let failed = 0
+  const BATCH = 5
+  for (let i = 0; i < sends.length; i += BATCH) {
+    const chunk = sends.slice(i, i + BATCH)
+    const results = await Promise.allSettled(
+      chunk.map((m) =>
+        fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+          body: JSON.stringify({ from: DIGEST_FROM, to: [m.email], subject: m.subject, html: m.html }),
         }),
-      })
-      if (r.ok) sent += 1
+      ),
+    )
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value.ok) sent += 1
       else failed += 1
-    } catch {
-      failed += 1
     }
+    if (i + BATCH < sends.length) await new Promise((r) => setTimeout(r, 1100))
   }
 
   if (snapshotRows.length) {
     await admin.from('weekly_snapshots').upsert(snapshotRows, { onConflict: 'user_id,week_of' })
   }
 
-  res.status(200).json({ ok: true, sent, failed, traders: valued.length, spWeekPct })
+  res.status(200).json({ ok: true, sent, failed, traders: valued.length, communitySize, spWeekPct })
 }
