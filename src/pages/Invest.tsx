@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Card } from '../components/Card'
-import { PriceChart } from '../components/PriceChart'
+import { PriceChart, type ChartStyle } from '../components/PriceChart'
 import { StaggerPage } from '../components/StaggerPage'
 import { Sparkline } from '../components/Sparkline'
 import { TraderLeaderboard } from '../components/TraderLeaderboard'
@@ -90,6 +90,7 @@ export function Invest({
 
   const [selectedId, setSelectedId] = useState(stocks[0].id)
   const [range, setRange] = useState<ChartRange>('1d')
+  const [chartStyle, setChartStyle] = useState<ChartStyle>('candles')
   const [charts, setCharts] = useState<Record<string, ChartData>>({})
   const [chartLoading, setChartLoading] = useState(false)
   const chartCardRef = useRef<HTMLDivElement>(null)
@@ -255,25 +256,43 @@ export function Invest({
             </div>
           </div>
 
-          <div className="mt-3 flex gap-1.5">
-            {CHART_RANGES.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setRange(r.id)}
-                className={`rounded-md px-2.5 py-1 font-mono text-[11px] font-bold transition-colors ${
-                  r.id === range ? 'bg-[#232b25] text-[#e9ece8]' : 'text-[#6b756c] hover:text-[#a7b0a8]'
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="flex gap-1.5">
+              {CHART_RANGES.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setRange(r.id)}
+                  className={`rounded-md px-2.5 py-1 font-mono text-[11px] font-bold transition-colors ${
+                    r.id === range ? 'bg-[#232b25] text-[#e9ece8]' : 'text-[#6b756c] hover:text-[#a7b0a8]'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex rounded-md border border-[#232b25] p-0.5">
+              {(['candles', 'line'] as const).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setChartStyle(st)}
+                  aria-pressed={chartStyle === st}
+                  className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter transition-colors ${
+                    chartStyle === st ? 'bg-[#232b25] text-[#e9ece8]' : 'text-[#6b756c] hover:text-[#a7b0a8]'
+                  }`}
+                >
+                  {st === 'candles' ? 'Candles' : 'Line'}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mt-2">
             <PriceChart
               points={chart?.points ?? []}
               range={range}
+              style={chartStyle}
               previousClose={chart?.previousClose}
               loading={chartLoading}
             />

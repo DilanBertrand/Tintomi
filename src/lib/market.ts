@@ -10,7 +10,8 @@ export const CHART_RANGES: { id: ChartRange; label: string }[] = [
   { id: '1y', label: '1Y' },
 ]
 
-export type ChartPoint = { t: number; c: number }
+/** Unix seconds, open, high, low, close */
+export type ChartPoint = { t: number; o: number; h: number; l: number; c: number }
 
 export type ChartData = {
   symbol: string

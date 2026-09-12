@@ -23,7 +23,8 @@ export type ChartPayload = {
   previousClose: number
   changePct: number
   marketState: string
-  points: { t: number; c: number }[]
+  /** Unix seconds, open, high, low, close */
+  points: { t: number; o: number; h: number; l: number; c: number }[]
 }
 
 type YahooChart = {
@@ -36,7 +37,14 @@ type YahooChart = {
         marketState?: string
       }
       timestamp?: number[]
-      indicators?: { quote?: { close?: (number | null)[] }[] }
+      indicators?: {
+        quote?: {
+          open?: (number | null)[]
+          high?: (number | null)[]
+          low?: (number | null)[]
+          close?: (number | null)[]
+        }[]
+      }
     }[]
     error?: { description?: string } | null
   }
@@ -60,11 +68,13 @@ export async function fetchYahooChart(symbol: string, range: ChartRange): Promis
   if (!result?.meta) throw new Error(data.chart?.error?.description ?? 'yahoo: empty result')
 
   const ts = result.timestamp ?? []
-  const closes = result.indicators?.quote?.[0]?.close ?? []
-  const points: { t: number; c: number }[] = []
+  const q = result.indicators?.quote?.[0] ?? {}
+  const points: ChartPayload['points'] = []
   for (let i = 0; i < ts.length; i++) {
-    const c = closes[i]
-    if (typeof c === 'number' && Number.isFinite(c)) points.push({ t: ts[i], c })
+    const c = q.close?.[i]
+    if (typeof c !== 'number' || !Number.isFinite(c)) continue
+    const num = (v: number | null | undefined) => (typeof v === 'number' && Number.isFinite(v) ? v : c)
+    points.push({ t: ts[i], o: num(q.open?.[i]), h: num(q.high?.[i]), l: num(q.low?.[i]), c })
   }
 
   const meta = result.meta
