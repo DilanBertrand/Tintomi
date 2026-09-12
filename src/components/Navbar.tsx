@@ -14,24 +14,22 @@ const items: NavItem[] = [
   { id: 'learn', label: 'Learn', Icon: FolderOpen },
   { id: 'invest', label: 'Invest', Icon: BarChart3 },
   { id: 'community', label: 'Community', Icon: Users },
-  { id: 'profile', label: 'Profile', Icon: User },
+  { id: 'profile', label: 'Account', Icon: User },
 ]
 
 type NavbarProps = {
   active: TabId
   onChange: (tab: TabId) => void
-  /** When set, the Profile tab shows this label instead of "Profile". */
-  profileTabLabel?: string
 }
 
-export function Navbar({ active, onChange, profileTabLabel }: NavbarProps) {
+export function Navbar({ active, onChange }: NavbarProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-[100] isolate border-t border-[#232b25] bg-[#0f1412] pb-[env(safe-area-inset-bottom)]">
       <div className="relative mx-auto flex w-full max-w-4xl items-stretch justify-between gap-0.5 px-1.5 py-2 sm:gap-1 sm:px-6 sm:py-3 lg:px-10">
         {items.map((item) => {
           const isActive = active === item.id
           const { Icon } = item
-          const tabLabel = item.id === 'profile' && profileTabLabel ? profileTabLabel : item.label
+          const tabLabel = item.label
           return (
             <motion.button
               key={item.id}

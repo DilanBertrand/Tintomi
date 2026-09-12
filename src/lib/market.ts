@@ -1,0 +1,41 @@
+/** Client for /api/chart (see api/chart.ts). */
+
+export type ChartRange = '1d' | '1w' | '1m' | '3m' | '1y'
+
+export const CHART_RANGES: { id: ChartRange; label: string }[] = [
+  { id: '1d', label: '1D' },
+  { id: '1w', label: '1W' },
+  { id: '1m', label: '1M' },
+  { id: '3m', label: '3M' },
+  { id: '1y', label: '1Y' },
+]
+
+export type ChartPoint = { t: number; c: number }
+
+export type ChartData = {
+  symbol: string
+  price: number
+  previousClose: number
+  changePct: number
+  marketState: string
+  points: ChartPoint[]
+}
+
+export async function fetchChart(symbol: string, range: ChartRange, signal?: AbortSignal): Promise<ChartData | null> {
+  try {
+    const res = await fetch(`/api/chart?symbol=${encodeURIComponent(symbol)}&range=${range}`, { signal })
+    if (!res.ok) return null
+    const data = (await res.json()) as Partial<ChartData> & { ok?: boolean }
+    if (!data.ok || typeof data.price !== 'number' || !Array.isArray(data.points)) return null
+    return {
+      symbol: data.symbol ?? symbol,
+      price: data.price,
+      previousClose: data.previousClose ?? data.price,
+      changePct: data.changePct ?? 0,
+      marketState: data.marketState ?? 'UNKNOWN',
+      points: data.points,
+    }
+  } catch {
+    return null
+  }
+}

@@ -1,9 +1,9 @@
 export type Stock = {
   id: string
+  /** Ticker sent to /api/chart */
   symbol: string
-  /** TradingView widget symbol (exchange:ticker) */
-  tvSymbol: string
   name: string
+  /** Fallback quote while the first live fetch is in flight or if it fails */
   basePrice: number
   changePercent: number
   blurb: string
@@ -11,10 +11,17 @@ export type Stock = {
 
 export const stocks: Stock[] = [
   {
+    id: 'spy',
+    symbol: 'SPY',
+    name: 'S&P 500',
+    basePrice: 764.29,
+    changePercent: 0.85,
+    blurb: 'Tracks the 500 largest US companies in one share (via the SPY ETF).',
+  },
+  {
     id: 'aapl',
     symbol: 'AAPL',
-    tvSymbol: 'NASDAQ:AAPL',
-    name: 'Apple Inc.',
+    name: 'Apple',
     basePrice: 228.5,
     changePercent: 0.42,
     blurb: 'Consumer hardware and services with recurring revenue.',
@@ -22,35 +29,39 @@ export const stocks: Stock[] = [
   {
     id: 'tsla',
     symbol: 'TSLA',
-    tvSymbol: 'NASDAQ:TSLA',
-    name: 'Tesla Inc.',
+    name: 'Tesla',
     basePrice: 248.75,
     changePercent: -0.31,
     blurb: 'EV and energy; higher beta than mega-cap peers.',
   },
   {
-    id: 'nvda',
-    symbol: 'NVDA',
-    tvSymbol: 'NASDAQ:NVDA',
-    name: 'NVIDIA Corp.',
-    basePrice: 138.25,
-    changePercent: 0.88,
-    blurb: 'Accelerated computing and AI infrastructure demand.',
-  },
-  {
     id: 'pltr',
     symbol: 'PLTR',
-    tvSymbol: 'NYSE:PLTR',
     name: 'Palantir',
     basePrice: 26.4,
     changePercent: 0.19,
     blurb: 'Enterprise software for data integration and analytics.',
   },
   {
+    id: 'nvda',
+    symbol: 'NVDA',
+    name: 'Nvidia',
+    basePrice: 218.29,
+    changePercent: -0.03,
+    blurb: 'Accelerated computing and AI infrastructure demand.',
+  },
+  {
+    id: 'amzn',
+    symbol: 'AMZN',
+    name: 'Amazon',
+    basePrice: 230,
+    changePercent: 0.1,
+    blurb: 'E-commerce plus AWS, the largest cloud provider.',
+  },
+  {
     id: 'rblx',
     symbol: 'RBLX',
-    tvSymbol: 'NYSE:RBLX',
-    name: 'Roblox Corp.',
+    name: 'Roblox',
     basePrice: 58.9,
     changePercent: -0.12,
     blurb: 'User-generated gaming platform and virtual economy.',

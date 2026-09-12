@@ -13,10 +13,3 @@ export function getDisplayName(profile: ProfileRow | null | undefined, user: Use
   if (user?.email?.trim()) return user.email.trim()
   return 'You'
 }
-
-/** Short label for bottom nav (profile tab). */
-export function truncateForNav(label: string, max = 12): string {
-  const t = label.trim()
-  if (t.length <= max) return t
-  return `${t.slice(0, Math.max(1, max - 1))}\u2026`
-}

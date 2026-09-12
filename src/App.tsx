@@ -15,7 +15,7 @@ import { Learn } from './pages/Learn'
 import { Login } from './pages/Login'
 import { Profile } from './pages/Profile'
 import { SignUp } from './pages/SignUp'
-import { fetchCandleCloses } from './lib/finnhub'
+import { fetchChart } from './lib/market'
 import { localProgressKeys } from './lib/localProgress'
 import { fetchProfile } from './lib/profiles'
 import { saveProgress } from './lib/progressSync'
@@ -26,7 +26,7 @@ import {
   toLocalYmd,
   type LearnStreak,
 } from './lib/streak'
-import { getDisplayName, truncateForNav } from './lib/displayName'
+import { getDisplayName } from './lib/displayName'
 import { pathToTab, tabToPath } from './lib/routes'
 
 function initLive(): LivePrices {
@@ -35,15 +35,6 @@ function initLive(): LivePrices {
     o[s.id] = { price: s.basePrice, changePct: s.changePercent }
   }
   return o
-}
-
-function initHistory(live: LivePrices): PriceHistory {
-  const h: PriceHistory = {}
-  for (const s of stocks) {
-    const p = live[s.id]?.price ?? s.basePrice
-    h[s.id] = [p, p]
-  }
-  return h
 }
 
 type WalletState = { balance: number; portfolio: Portfolio }
@@ -164,13 +155,11 @@ export default function App() {
     portfolio: {},
   })
   const [livePrices, setLivePrices] = useState<LivePrices>(initLive)
-  const [priceHistory, setPriceHistory] = useState<PriceHistory>(() => initHistory(initLive()))
-  const [finnhubHistory, setFinnhubHistory] = useState<PriceHistory>({})
+  const [chartSeries, setChartSeries] = useState<PriceHistory>({})
 
   const isLoggedIn = !!user
 
   const displayName = useMemo(() => getDisplayName(profile, user), [profile, user])
-  const navProfileLabel = useMemo(() => truncateForNav(displayName), [displayName])
 
   useEffect(() => {
     if (isLoggedIn) document.body.classList.add('tm-dashboard')
@@ -375,66 +364,39 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [isLoggedIn, authLoading])
 
+  // Real quotes: poll today's chart for every watchlist symbol once a minute.
+  // Holdings are valued at the last regular-session price from that response.
   useEffect(() => {
     if (!isLoggedIn) return
-    const token = import.meta.env.VITE_FINNHUB_TOKEN as string | undefined
-    if (!token) return
-
     let cancelled = false
 
-    async function loadFinnhub() {
-      const next: PriceHistory = {}
-      for (const s of stocks) {
-        if (cancelled) return
-        const c = await fetchCandleCloses(s.symbol)
-        if (c && c.length >= 2) next[s.id] = c
-        await new Promise((r) => window.setTimeout(r, 260))
-      }
-      if (!cancelled) setFinnhubHistory(next)
+    async function loadQuotes() {
+      const results = await Promise.all(stocks.map((s) => fetchChart(s.symbol, '1d')))
+      if (cancelled) return
+      setLivePrices((prev) => {
+        const next: LivePrices = { ...prev }
+        stocks.forEach((s, i) => {
+          const r = results[i]
+          if (r) next[s.id] = { price: r.price, changePct: r.changePct }
+        })
+        return next
+      })
+      setChartSeries((prev) => {
+        const next: PriceHistory = { ...prev }
+        stocks.forEach((s, i) => {
+          const r = results[i]
+          if (r && r.points.length >= 2) next[s.id] = r.points.map((p) => p.c)
+        })
+        return next
+      })
     }
 
-    loadFinnhub()
-    const id = window.setInterval(loadFinnhub, 90_000)
+    void loadQuotes()
+    const id = window.setInterval(loadQuotes, 60_000)
     return () => {
       cancelled = true
       window.clearInterval(id)
     }
-  }, [isLoggedIn])
-
-  const chartSeries = useMemo(() => {
-    const out: PriceHistory = { ...priceHistory }
-    for (const s of stocks) {
-      const fh = finnhubHistory[s.id]
-      if (fh?.length) out[s.id] = fh
-    }
-    return out
-  }, [priceHistory, finnhubHistory])
-
-  useEffect(() => {
-    if (!isLoggedIn) return
-    const id = window.setInterval(() => {
-      setLivePrices((prev) => {
-        const next: LivePrices = { ...prev }
-        for (const s of stocks) {
-          const cur = next[s.id]
-          const wiggle = (Math.random() - 0.5) * 0.18
-          const price = Math.max(0.5, Math.round((cur.price + wiggle) * 100) / 100)
-          const drift = (Math.random() - 0.5) * 0.08
-          const changePct = Math.round((cur.changePct * 0.96 + drift) * 100) / 100
-          next[s.id] = { price, changePct }
-        }
-        setPriceHistory((hist) => {
-          const nh: PriceHistory = { ...hist }
-          for (const s of stocks) {
-            const p = next[s.id].price
-            nh[s.id] = [...(nh[s.id] ?? [p]), p].slice(-56)
-          }
-          return nh
-        })
-        return next
-      })
-    }, 2200)
-    return () => window.clearInterval(id)
   }, [isLoggedIn])
 
   const portfolioValue = useMemo(() => {
@@ -660,7 +622,7 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
       </div>
-      <Navbar active={tab} onChange={goToTab} profileTabLabel={navProfileLabel} />
+      <Navbar active={tab} onChange={goToTab} />
     </div>
   )
 }
