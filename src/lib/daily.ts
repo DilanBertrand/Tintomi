@@ -1,7 +1,8 @@
 /** Helpers for content that should change once per calendar day (local time). */
 
 export function dayIndex(now = new Date()): number {
-  return Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86_400_000)
+  // Date.UTC on the local calendar date: no timezone shift, whole days only.
+  return Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86_400_000)
 }
 
 /** Pick `count` items starting at a day-based offset, wrapping around. */
