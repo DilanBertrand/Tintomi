@@ -5,7 +5,7 @@ import { Card } from '../components/Card'
 import { CommunityFeed } from '../components/CommunityFeed'
 import { StaggerPage } from '../components/StaggerPage'
 import { useAuth } from '../contexts/AuthContext'
-import { dayIndex, POLL_QUESTIONS } from '../lib/daily'
+import { dayIndex, POLL_QUESTIONS, WEEKLY_CHALLENGES, weekIndex } from '../lib/daily'
 import { localProgressKeys } from '../lib/localProgress'
 import { updateProfileFields } from '../lib/profiles'
 import { supabase } from '../lib/supabase'
@@ -51,10 +51,14 @@ function readPollVote(userId: string): number | null {
   return null
 }
 
+const CHALLENGE_WEEK = weekIndex()
+const thisWeekChallenge = WEEKLY_CHALLENGES[CHALLENGE_WEEK % WEEKLY_CHALLENGES.length]
+
+/** "Joined" is stored with the week index so a new challenge starts fresh every Monday. */
 function readChallengeJoined(userId: string): boolean {
   try {
     const raw = localStorage.getItem(localProgressKeys.communityChallengeJoined(userId))
-    return raw === '1' || raw === 'true'
+    return raw === String(CHALLENGE_WEEK)
   } catch {
     return false
   }
@@ -158,7 +162,7 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
   useEffect(() => {
     if (!userId || !isJoined) return
     try {
-      localStorage.setItem(localProgressKeys.communityChallengeJoined(userId), '1')
+      localStorage.setItem(localProgressKeys.communityChallengeJoined(userId), String(CHALLENGE_WEEK))
     } catch {
       /* ignore */
     }
@@ -388,11 +392,9 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
           </div>
         </Card>
 
-        <Card title="CHALLENGE">
-          <p className="text-sm font-semibold text-[#e9ece8]">Save $20 this week.</p>
-          <p className="mt-2 text-sm text-[#a7b0a8]">
-            Track one no-spend day. Build the habit without the noise.
-          </p>
+        <Card title="CHALLENGE" subtitle="New one every Monday">
+          <p className="text-sm font-semibold text-[#e9ece8]">{thisWeekChallenge.title}</p>
+          <p className="mt-2 text-sm text-[#a7b0a8]">{thisWeekChallenge.detail}</p>
           <button
             type="button"
             disabled={isJoined}
