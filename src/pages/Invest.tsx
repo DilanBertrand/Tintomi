@@ -28,6 +28,8 @@ type InvestProps = {
   chartSeries: PriceHistory
   onBuy: (stockId: string, price: number) => void
   onSell: (stockId: string, price: number) => void
+  /** Stock to show first (set when arriving from Home); changes re-select. */
+  focusStockId?: string | null
 }
 
 const subPanel =
@@ -103,17 +105,27 @@ export function Invest({
   chartSeries,
   onBuy,
   onSell,
+  focusStockId,
 }: InvestProps) {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
 
-  const [selectedId, setSelectedId] = useState(stocks[0].id)
+  const [selectedId, setSelectedId] = useState(() =>
+    focusStockId && stocks.some((s) => s.id === focusStockId) ? focusStockId : stocks[0].id,
+  )
   const [range, setRange] = useState<ChartRange>('1d')
   const [chartStyle, setChartStyle] = useState<ChartStyle>('candles')
   const [charts, setCharts] = useState<Record<string, ChartData>>({})
   const [chartLoading, setChartLoading] = useState(false)
   const chartCardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (focusStockId && stocks.some((s) => s.id === focusStockId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- responds to navigation from Home
+      setSelectedId(focusStockId)
+    }
+  }, [focusStockId])
 
   const selected = stocks.find((s) => s.id === selectedId) ?? stocks[0]
   const chartKey = `${selected.symbol}:${range}`

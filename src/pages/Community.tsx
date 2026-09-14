@@ -5,6 +5,7 @@ import { Card } from '../components/Card'
 import { CommunityFeed } from '../components/CommunityFeed'
 import { StaggerPage } from '../components/StaggerPage'
 import { useAuth } from '../contexts/AuthContext'
+import { dayIndex, POLL_QUESTIONS } from '../lib/daily'
 import { localProgressKeys } from '../lib/localProgress'
 import { updateProfileFields } from '../lib/profiles'
 import { supabase } from '../lib/supabase'
@@ -30,21 +31,20 @@ const HYBRID_TOP_THREE: LeaderRow[] = [
 const rowGlass =
   'flex items-center justify-between rounded-xl border border-[#222222] bg-transparent px-3 py-2 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#2a2a2a] '
 
-const POLL_OPTIONS = [
-  'Subscriptions stacking silently',
-  'Impulse buys on “deals”',
-  'Trying to time the market',
-] as const
+const todayPoll = POLL_QUESTIONS[dayIndex() % POLL_QUESTIONS.length]
+const POLL_OPTIONS = todayPoll.options
+const POLL_RESULT_PCTS = todayPoll.results
+const POLL_DAY = dayIndex()
 
-/** Vote distribution shown after the user casts. */
-const POLL_RESULT_PCTS: readonly [number, number, number] = [45, 30, 25]
-
+/** Vote is stored with the day it was cast so tomorrow's question starts fresh. */
 function readPollVote(userId: string): number | null {
   try {
     const raw = localStorage.getItem(localProgressKeys.communityPoll(userId))
     if (raw === null) return null
-    const n = Number.parseInt(raw, 10)
-    if (Number.isInteger(n) && n >= 0 && n < POLL_OPTIONS.length) return n
+    const parsed = JSON.parse(raw) as { day?: unknown; idx?: unknown }
+    if (parsed.day !== POLL_DAY) return null
+    const n = parsed.idx
+    if (typeof n === 'number' && Number.isInteger(n) && n >= 0 && n < POLL_OPTIONS.length) return n
   } catch {
     /* ignore */
   }
@@ -149,7 +149,7 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
   useEffect(() => {
     if (!userId || selectedOption === null) return
     try {
-      localStorage.setItem(localProgressKeys.communityPoll(userId), String(selectedOption))
+      localStorage.setItem(localProgressKeys.communityPoll(userId), JSON.stringify({ day: POLL_DAY, idx: selectedOption }))
     } catch {
       /* ignore */
     }
@@ -489,10 +489,8 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
           </Card>
         )}
 
-        <Card title="POLL" subtitle="Signal check">
-          <p className="text-sm font-semibold text-[#e9ece8]">
-            What&apos;s the biggest money trap right now?
-          </p>
+        <Card title="POLL" subtitle="New question every day">
+          <p className="text-sm font-semibold text-[#e9ece8]">{todayPoll.question}</p>
           <div className="mt-4 space-y-2">
             {POLL_OPTIONS.map((opt, idx) => {
               const voted = selectedOption !== null

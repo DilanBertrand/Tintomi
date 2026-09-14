@@ -92,3 +92,37 @@ export async function fetchYahooChart(symbol: string, range: ChartRange): Promis
     points,
   }
 }
+
+export type NewsItem = {
+  title: string
+  publisher: string
+  link: string
+  /** Unix seconds */
+  publishedAt: number
+}
+
+type YahooSearch = {
+  news?: { title?: string; publisher?: string; link?: string; providerPublishTime?: number }[]
+}
+
+/** Latest headlines mentioning a symbol (Yahoo search endpoint, no key needed). */
+export async function fetchYahooNews(symbol: string, count = 5): Promise<NewsItem[]> {
+  const url = new URL('https://query1.finance.yahoo.com/v1/finance/search')
+  url.searchParams.set('q', symbol)
+  url.searchParams.set('newsCount', String(count))
+  url.searchParams.set('quotesCount', '0')
+  const res = await fetch(url.toString(), { headers: { 'User-Agent': 'Mozilla/5.0' } })
+  if (!res.ok) throw new Error(`yahoo ${res.status}`)
+  const data = (await res.json()) as YahooSearch
+  const out: NewsItem[] = []
+  for (const n of data.news ?? []) {
+    if (!n.title || !n.link || !/^https:\/\//.test(n.link)) continue
+    out.push({
+      title: n.title,
+      publisher: n.publisher ?? '',
+      link: n.link,
+      publishedAt: typeof n.providerPublishTime === 'number' ? n.providerPublishTime : 0,
+    })
+  }
+  return out
+}

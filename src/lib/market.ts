@@ -40,3 +40,16 @@ export async function fetchChart(symbol: string, range: ChartRange, signal?: Abo
     return null
   }
 }
+
+export type NewsItem = { title: string; publisher: string; link: string; publishedAt: number }
+
+export async function fetchNews(symbol: string, signal?: AbortSignal): Promise<NewsItem[]> {
+  try {
+    const res = await fetch(`/api/news?symbol=${encodeURIComponent(symbol)}`, { signal })
+    if (!res.ok) return []
+    const data = (await res.json()) as { ok?: boolean; items?: NewsItem[] }
+    return data.ok && Array.isArray(data.items) ? data.items : []
+  } catch {
+    return []
+  }
+}

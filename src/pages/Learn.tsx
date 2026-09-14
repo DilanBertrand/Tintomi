@@ -30,6 +30,8 @@ type LearnProps = {
   completedStoryIds: string[]
   onCompleteStory: (storyId: string) => void
   streakDays: number
+  /** Lesson or story to open immediately (set when arriving from Home). */
+  openItem?: { kind: 'lesson' | 'story'; id: string; nonce: number } | null
 }
 
 function isLevelComplete(levelIndex: number, done: Set<string>) {
@@ -104,6 +106,7 @@ export function Learn({
   completedStoryIds,
   onCompleteStory,
   streakDays,
+  openItem,
 }: LearnProps) {
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -194,6 +197,29 @@ export function Learn({
     setPicked(null)
     setCorrectCount(0)
   }
+
+  // Deep link from Home: open the requested lesson/story once per request.
+  const openItemRef = useRef(openItem)
+  useEffect(() => {
+    if (!openItem || openItemRef.current === openItem) return
+    openItemRef.current = openItem
+    if (openItem.kind === 'story') {
+      const s = storyLessons.find((x) => x.id === openItem.id)
+      if (s) {
+        setTab('lessons')
+        openStory(s)
+      }
+      return
+    }
+    for (const level of levels) {
+      const lesson = level.lessons.find((l) => l.id === openItem.id)
+      if (lesson) {
+        setTab('quizzes')
+        openLesson(lesson)
+        return
+      }
+    }
+  }, [openItem])
 
   const openReview = (startedAt: number) => {
     const questions = shuffle(weakSpots)

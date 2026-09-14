@@ -155,6 +155,8 @@ export default function App() {
     portfolio: {},
   })
   const [livePrices, setLivePrices] = useState<LivePrices>(initLive)
+  const [investFocusId, setInvestFocusId] = useState<string | null>(null)
+  const [learnOpenItem, setLearnOpenItem] = useState<{ kind: 'lesson' | 'story'; id: string; nonce: number } | null>(null)
   const [chartSeries, setChartSeries] = useState<PriceHistory>({})
 
   const isLoggedIn = !!user
@@ -472,6 +474,24 @@ export default function App() {
     window.history.pushState(null, '', tabToPath(next))
   }, [])
 
+  const openStock = useCallback(
+    (stockId: string) => {
+      setInvestFocusId(stockId)
+      goToTab('invest')
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    },
+    [goToTab],
+  )
+
+  const openLearnItem = useCallback(
+    (kind: 'lesson' | 'story', id: string) => {
+      setLearnOpenItem({ kind, id, nonce: Date.now() })
+      goToTab('learn')
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    },
+    [goToTab],
+  )
+
   /** Sync dashboard tab with URL on load and after auth resolves. */
   useEffect(() => {
     if (!isLoggedIn || authLoading) return
@@ -590,7 +610,16 @@ export default function App() {
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3, ease: tabEase }}
           >
-            {tab === 'home' ? <Home onNavigate={goToTab} /> : null}
+            {tab === 'home' ? (
+              <Home
+                onNavigate={goToTab}
+                live={livePrices}
+                completedLessonIds={completedLessonIds}
+                completedStoryIds={completedStoryIds}
+                onOpenStock={openStock}
+                onOpenLearnItem={openLearnItem}
+              />
+            ) : null}
             {tab === 'learn' ? (
               <Learn
                 userId={user.id}
@@ -601,6 +630,7 @@ export default function App() {
                 completedStoryIds={completedStoryIds}
                 onCompleteStory={completeStory}
                 streakDays={displayLearnStreak(learnStreak)}
+                openItem={learnOpenItem}
               />
             ) : null}
             {tab === 'invest' ? (
@@ -613,6 +643,7 @@ export default function App() {
                 chartSeries={chartSeries}
                 onBuy={buy}
                 onSell={sell}
+                focusStockId={investFocusId}
               />
             ) : null}
             {tab === 'community' ? (
