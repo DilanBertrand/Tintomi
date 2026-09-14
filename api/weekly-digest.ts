@@ -15,9 +15,9 @@
  * anyone but the account owner receives these.
  */
 import { createClient } from '@supabase/supabase-js'
-import { levels } from '../src/data/lessons'
-import { stocks } from '../src/data/stocks'
-import { fetchYahooChart, type ChartPayload } from './_lib/yahoo'
+import { levels } from '../src/data/lessons.js'
+import { stocks } from '../src/data/stocks.js'
+import { fetchYahooChart, type ChartPayload } from './_lib/yahoo.js'
 
 type VercelRequest = { method?: string; headers: Record<string, string | string[] | undefined> }
 type VercelResponse = { status: (c: number) => { json: (b: unknown) => void } }

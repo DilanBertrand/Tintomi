@@ -4,7 +4,7 @@
  * watchlist symbols are allowed so the endpoint can't be used as an open proxy.
  */
 
-import { ALLOWED_SYMBOLS, fetchYahooChart, isChartRange } from './_lib/yahoo'
+import { ALLOWED_SYMBOLS, fetchYahooChart, isChartRange } from './_lib/yahoo.js'
 
 type VercelRequest = {
   method?: string
