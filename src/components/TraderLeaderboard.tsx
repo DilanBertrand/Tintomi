@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Card } from './Card'
-import { stocks } from '../data/stocks'
+import { lotPrice, stocks } from '../data/stocks'
 import { supabase } from '../lib/supabase'
 import type { LivePrices } from '../pages/Invest'
 
@@ -64,7 +64,7 @@ export function TraderLeaderboard({ userId, live }: { userId: string; live: Live
       let value = r.wallet.balance
       for (const s of stocks) {
         const shares = r.wallet.portfolio[s.id] ?? 0
-        value += shares * (live[s.id]?.price ?? s.basePrice)
+        value += shares * lotPrice(s, live[s.id]?.price ?? s.basePrice)
       }
       const returnPct = ((value - STARTING_BALANCE) / STARTING_BALANCE) * 100
       return { ...r, value, returnPct }

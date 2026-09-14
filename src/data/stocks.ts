@@ -7,6 +7,29 @@ export type Stock = {
   basePrice: number
   changePercent: number
   blurb: string
+  /**
+   * Amount of the asset one "share" in the wallet represents. Stocks are 1;
+   * Bitcoin is 0.001 so a $1,000 wallet can actually buy some.
+   */
+  lot?: number
+  /** Trades around the clock (crypto), so the market-closed banner doesn't apply. */
+  alwaysOpen?: boolean
+  /** Short unit name for lot-based assets, e.g. BTC */
+  unitName?: string
+}
+
+/** Price of one wallet unit (share or lot) for a stock. */
+export function lotPrice(stock: Stock, assetPrice: number): number {
+  return assetPrice * (stock.lot ?? 1)
+}
+
+/** Human label for a number of wallet units, e.g. "3 shares" or "0.003 BTC". */
+export function holdingLabel(stock: Stock, units: number): string {
+  if (stock.lot && stock.lot !== 1) {
+    const amount = units * stock.lot
+    return `${amount.toLocaleString('en-US', { maximumFractionDigits: 6 })} ${stock.unitName ?? stock.symbol}`
+  }
+  return `${units} ${units === 1 ? 'share' : 'shares'}`
 }
 
 export const stocks: Stock[] = [
@@ -65,5 +88,16 @@ export const stocks: Stock[] = [
     basePrice: 58.9,
     changePercent: -0.12,
     blurb: 'User-generated gaming platform and virtual economy.',
+  },
+  {
+    id: 'btc',
+    symbol: 'BTC-USD',
+    name: 'Bitcoin',
+    basePrice: 79075,
+    changePercent: 2.95,
+    blurb: 'The largest cryptocurrency. Trades 24/7 and swings far more than stocks.',
+    lot: 0.001,
+    unitName: 'BTC',
+    alwaysOpen: true,
   },
 ]

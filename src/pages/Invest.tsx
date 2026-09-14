@@ -5,7 +5,7 @@ import { PriceChart, type ChartStyle } from '../components/PriceChart'
 import { StaggerPage } from '../components/StaggerPage'
 import { Sparkline } from '../components/Sparkline'
 import { TraderLeaderboard } from '../components/TraderLeaderboard'
-import { stocks } from '../data/stocks'
+import { holdingLabel, lotPrice, stocks } from '../data/stocks'
 import { CHART_RANGES, fetchChart, type ChartData, type ChartRange } from '../lib/market'
 import { fadeSlideUp } from '../motion/variants'
 
@@ -86,7 +86,8 @@ function MarketClosedBanner({ state }: { state: string }) {
   )
 }
 
-function marketLabel(state: string) {
+function marketLabel(state: string, alwaysOpen?: boolean) {
+  if (alwaysOpen) return 'Trades 24/7'
   if (state === 'REGULAR') return 'Market open'
   if (state === 'PRE') return 'Pre-market'
   if (state === 'POST' || state === 'POSTPOST') return 'After hours'
@@ -152,7 +153,9 @@ export function Invest({
   }, [chart, range, price])
 
   const shares = portfolio[selected.id] ?? 0
-  const canBuy = balance >= price - 1e-9
+  // Wallet units: whole shares for stocks, 0.001 BTC lots for Bitcoin.
+  const unitPrice = lotPrice(selected, price)
+  const canBuy = balance >= unitPrice - 1e-9
   const canSell = shares > 0
   const up = (rangeChange?.pct ?? dayChangePct) >= 0
 
@@ -160,7 +163,7 @@ export function Invest({
     let sum = balance
     for (const s of stocks) {
       const held = portfolio[s.id] ?? 0
-      sum += held * (live[s.id]?.price ?? s.basePrice)
+      sum += held * lotPrice(s, live[s.id]?.price ?? s.basePrice)
     }
     return sum
   }, [balance, portfolio, live])
@@ -252,7 +255,7 @@ export function Invest({
               <p className="font-mono text-xs font-semibold text-[#2979ff]">{selected.symbol}</p>
               <h3 className="tm-premium-title truncate text-lg sm:text-xl">{selected.name}</h3>
               <p className="mt-1 text-[10px] text-[#6b756c]">
-                {chart ? marketLabel(chart.marketState) : 'Loading…'} · updates every minute
+                {chart ? marketLabel(chart.marketState, selected.alwaysOpen) : 'Loading…'} · updates every minute
               </p>
             </div>
             <div className="shrink-0 text-right">
@@ -321,26 +324,26 @@ export function Invest({
             <div>
               <p className="text-[10px] font-bold uppercase tracking-tighter text-[#6b756c]">You own</p>
               <p className="font-mono text-sm text-[#a7b0a8]">
-                {shares} {shares === 1 ? 'share' : 'shares'}
-                {shares > 0 ? <span className="text-[#6b756c]"> · ${fmtMoney(shares * price)}</span> : null}
+                {holdingLabel(selected, shares)}
+                {shares > 0 ? <span className="text-[#6b756c]"> · ${fmtMoney(shares * unitPrice)}</span> : null}
               </p>
             </div>
             <div className="flex gap-2.5">
               <button
                 type="button"
                 disabled={!canBuy}
-                onClick={() => onBuy(selected.id, price)}
+                onClick={() => onBuy(selected.id, unitPrice)}
                 className="min-h-[40px] min-w-[5rem] rounded-full bg-[#e9ece8] px-4 py-2 text-xs font-bold text-[#0f1412] transition-all active:translate-y-px disabled:opacity-35"
               >
-                Buy 1
+                Buy {holdingLabel(selected, 1).replace(/^1 share$/, '1')}
               </button>
               <button
                 type="button"
                 disabled={!canSell}
-                onClick={() => onSell(selected.id, price)}
+                onClick={() => onSell(selected.id, unitPrice)}
                 className="min-h-[40px] min-w-[5rem] rounded-full border border-[#39423b] bg-transparent px-4 py-2 text-xs font-bold text-[#e9ece8] transition-all active:translate-y-px disabled:opacity-35"
               >
-                Sell 1
+                Sell {holdingLabel(selected, 1).replace(/^1 share$/, '1')}
               </button>
             </div>
           </div>
@@ -370,7 +373,7 @@ export function Invest({
                   <p className="truncate text-sm font-semibold text-[#e9ece8]">{s.name}</p>
                   <p className="font-mono text-[11px] text-[#6b756c]">
                     {s.symbol}
-                    {held > 0 ? ` · ${held} owned` : ''}
+                    {held > 0 ? ` · ${holdingLabel(s, held)} owned` : ''}
                   </p>
                 </div>
                 <Sparkline values={spark.length >= 2 ? spark : [p, p]} width={72} height={28} positive={sUp} />

@@ -16,7 +16,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { levels } from '../src/data/lessons.js'
-import { stocks } from '../src/data/stocks.js'
+import { lotPrice, stocks } from '../src/data/stocks.js'
 import { fetchYahooChart, type ChartPayload } from './_lib/yahoo.js'
 
 type VercelRequest = { method?: string; headers: Record<string, string | string[] | undefined> }
@@ -225,7 +225,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let netWorth = wallet.balance
     for (const s of stocks) {
       const shares = wallet.portfolio[s.id] ?? 0
-      netWorth += shares * (charts.get(s.id)?.price ?? s.basePrice)
+      netWorth += shares * lotPrice(s, charts.get(s.id)?.price ?? s.basePrice)
     }
     valued.push({ p, wallet, netWorth: Math.round(netWorth * 100) / 100 })
   }

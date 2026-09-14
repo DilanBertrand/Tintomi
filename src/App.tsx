@@ -6,7 +6,7 @@ import { MeshBackdrop } from './components/MeshBackdrop'
 import { Navbar, type TabId } from './components/Navbar'
 import { NotificationBell } from './components/NotificationBell'
 import { LevelUpToast } from './components/LevelUpToast'
-import { stocks } from './data/stocks'
+import { lotPrice, stocks } from './data/stocks'
 import { Community } from './pages/Community'
 import { Home } from './pages/Home'
 import { Invest, type LivePrices, type Portfolio, type PriceHistory } from './pages/Invest'
@@ -403,7 +403,7 @@ export default function App() {
     let sum = balance
     for (const s of stocks) {
       const shares = portfolio[s.id] ?? 0
-      sum += shares * (livePrices[s.id]?.price ?? s.basePrice)
+      sum += shares * lotPrice(s, livePrices[s.id]?.price ?? s.basePrice)
     }
     return sum
   }, [balance, portfolio, livePrices])

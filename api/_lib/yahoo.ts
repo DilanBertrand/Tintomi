@@ -4,7 +4,7 @@
  * directly (no CORS), so both environments go through this server-side hop.
  */
 
-export const ALLOWED_SYMBOLS = new Set(['SPY', 'AAPL', 'TSLA', 'PLTR', 'NVDA', 'AMZN', 'RBLX'])
+export const ALLOWED_SYMBOLS = new Set(['SPY', 'AAPL', 'TSLA', 'PLTR', 'NVDA', 'AMZN', 'RBLX', 'BTC-USD'])
 
 export const RANGES = {
   '1d': { range: '1d', interval: '5m' },
