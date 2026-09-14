@@ -613,7 +613,6 @@ export default function App() {
             {tab === 'home' ? (
               <Home
                 onNavigate={goToTab}
-                xp={xp}
                 live={livePrices}
                 completedLessonIds={completedLessonIds}
                 completedStoryIds={completedStoryIds}

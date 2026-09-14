@@ -73,7 +73,6 @@ function timeAgo(unixSeconds: number): string {
 
 type HomeProps = {
   onNavigate: (tab: TabId) => void
-  xp: number
   live: LivePrices
   completedLessonIds: string[]
   completedStoryIds: string[]
@@ -85,7 +84,6 @@ type HomeProps = {
 
 export function Home({
   onNavigate,
-  xp,
   live,
   completedLessonIds,
   completedStoryIds,
@@ -140,14 +138,6 @@ export function Home({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       >
-        <button
-          type="button"
-          onClick={() => onNavigate('profile')}
-          className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#2979ff]/40 bg-[#2979ff]/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#2979ff] transition hover:bg-[#2979ff]/20"
-        >
-          Level {Math.floor(xp / 100) + 1}
-          <span className="font-mono text-[#a7b0a8]">{xp % 100}/100 XP</span>
-        </button>
         <h1 className="tm-headline text-[clamp(1.75rem,6.5vw,3.25rem)] leading-[1.1] sm:text-5xl">
           Your money is losing power
         </h1>
