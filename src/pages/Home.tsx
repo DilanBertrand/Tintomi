@@ -320,25 +320,13 @@ export function Home({
               )}
             </div>
           </div>
-          <div className="relative mt-6 flex flex-col gap-2.5 sm:flex-row">
-            {headline ? (
-              <a
-                href={headline.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 rounded-full border border-[#39423b] py-4 text-center text-sm font-black uppercase tracking-tight text-[#e9ece8] transition hover:bg-white/[0.07] active:translate-y-px"
-              >
-                Read article
-              </a>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => onOpenStock(newsStock.id)}
-              className="flex-1 rounded-full bg-[#e9ece8] py-4 text-sm font-black uppercase tracking-tight text-[#0f1412] transition hover:brightness-105 active:translate-y-px"
-            >
-              Trade {newsStock.name}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => onOpenStock(newsStock.id)}
+            className="relative mt-6 w-full rounded-full bg-[#e9ece8] py-4 text-sm font-black uppercase tracking-tight text-[#0f1412] transition hover:brightness-105 active:translate-y-px"
+          >
+            Trade {newsStock.name}
+          </button>
         </div>
       </motion.section>
     </div>
