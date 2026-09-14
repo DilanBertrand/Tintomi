@@ -162,6 +162,7 @@ export function Learn({
 
   const xpIntoLevel = xp % 100
   const nextLevelXp = 100
+  const currentLevel = Math.floor(xp / 100) + 1
 
   const closeLesson = () => {
     setSession(null)
@@ -374,14 +375,16 @@ export function Learn({
               <p className="text-xs text-[#a7b0a8]">Day streak</p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-[#a7b0a8]">Next bracket</p>
-              <p className="font-mono text-sm font-semibold text-[#e9ece8]">
-                {xpIntoLevel} / {nextLevelXp}
-              </p>
+              <p className="text-xs text-[#a7b0a8]">Your level</p>
+              <p className="font-mono text-3xl font-semibold text-[#2979ff]">{currentLevel}</p>
             </div>
           </div>
           <div className="mt-4">
-            <ProgressBar value={xpIntoLevel} max={nextLevelXp} label="Progress to next 100 XP" />
+            <ProgressBar
+              value={xpIntoLevel}
+              max={nextLevelXp}
+              label={`${nextLevelXp - xpIntoLevel} XP to Level ${currentLevel + 1}`}
+            />
           </div>
         </Card>
 
