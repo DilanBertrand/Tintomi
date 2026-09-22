@@ -547,8 +547,8 @@ export default function App() {
     window.scrollTo(0, 0)
   }, [tab, isLoggedIn])
 
-  // Policy pages render before any auth gate so a direct link (or a link from
-  // Stripe / an app store review) always resolves, signed in or not.
+  // Policy pages render before any auth gate so a direct link (from an email
+  // footer, a search result or an app store review) always resolves.
   if (legalSlug) {
     return (
       <LegalPage

@@ -3,7 +3,7 @@
  * and the site footer.
  *
  * ⚠️ BEFORE LAUNCH: every field marked TODO must be filled in. EU/UK e-commerce
- * rules (and Stripe's own terms) require a trader to publish their legal name,
+ * rules expect an online service aimed at consumers to publish its legal name,
  * geographic address and a contact email. Fields left null are simply omitted
  * from the rendered pages rather than shown as placeholders.
  */
@@ -22,7 +22,7 @@ export const COMPANY = {
   /** TODO: country whose law governs the Terms and whose regulator hears complaints. */
   country: null as string | null,
   /**
-   * Contact address for users, privacy requests and refunds.
+   * Contact address for users and privacy requests.
    * TODO: replace with a role address (e.g. support@tintomi.com) before launch —
    * a personal inbox published on a public site attracts spam and mixes concerns.
    */
@@ -53,12 +53,6 @@ export const SUBPROCESSORS = [
     role: 'Website hosting and server logs',
     location: 'United States / global edge network',
     privacyUrl: 'https://vercel.com/legal/privacy-policy',
-  },
-  {
-    name: 'Stripe',
-    role: 'Payment processing for Tintomi Pro',
-    location: 'United States / Ireland',
-    privacyUrl: 'https://stripe.com/privacy',
   },
   {
     name: 'Resend',

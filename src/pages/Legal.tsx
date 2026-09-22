@@ -87,8 +87,8 @@ function CompanyDetails() {
       {import.meta.env.DEV && rows.length < 4 ? (
         <p className="mt-3 rounded-lg border border-[#c9a227]/40 bg-[#1a1608] p-3 text-xs text-[#e5c76b]">
           Dev-only reminder: fill in legalName, registrationNumber, address and country in{' '}
-          <code>src/lib/legal.ts</code>. Missing fields are hidden in production, but publishing a paid service
-          without them is not compliant in the EU/UK.
+          <code>src/lib/legal.ts</code>. Missing fields are hidden in production, but an online service aimed at
+          consumers is expected to publish them in the EU/UK.
         </p>
       ) : null}
     </div>
@@ -113,7 +113,9 @@ function Privacy({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
         <li>You need an email address and a password to have an account. Everything else is optional.</li>
         <li>We do not run advertising, and we do not sell or share your data with advertisers or data brokers.</li>
         <li>We do not use analytics, tracking pixels, or third-party cookies.</li>
-        <li>All the trading on {COMPANY.productName} is practice with fake money. We never ask for bank details.</li>
+        <li>
+          {COMPANY.productName} is free. There is nothing to buy, so we never ask for payment or bank details.
+        </li>
         <li>You can delete your account and your data at any time by emailing us.</li>
       </UL>
 
@@ -135,17 +137,12 @@ function Privacy({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
         show you how your week went.
       </P>
       <P>
-        <strong className="text-[#e9ece8]">Payment details, if you buy Tintomi Pro.</strong> Payments are handled
-        entirely by Stripe. Card numbers never reach our servers. We store only a Stripe customer reference and whether
-        your subscription is active.
-      </P>
-      <P>
         <strong className="text-[#e9ece8]">Technical data.</strong> Our host keeps standard server logs (IP address,
         browser type, pages requested) for security and debugging. We do not build profiles from them.
       </P>
       <P>
-        We do not collect your real name, phone number, address, school, location, or any financial account
-        information, and we ask you not to send them to us.
+        We do not collect your real name, phone number, address, school, location, payment details, or any financial
+        account information, and we ask you not to send them to us.
       </P>
 
       <H2>Why we are allowed to use it</H2>
@@ -154,8 +151,8 @@ function Privacy({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
       </P>
       <UL>
         <li>
-          <strong className="text-[#e9ece8]">Performing our contract with you</strong> — running your account, saving
-          your progress, and providing Tintomi Pro if you buy it.
+          <strong className="text-[#e9ece8]">Performing our contract with you</strong> — running your account and
+          saving your progress.
         </li>
         <li>
           <strong className="text-[#e9ece8]">Your consent</strong> — the optional profile picture and display name, and
@@ -164,10 +161,6 @@ function Privacy({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
         <li>
           <strong className="text-[#e9ece8]">Our legitimate interests</strong> — keeping the service secure, preventing
           abuse and spam, and fixing bugs.
-        </li>
-        <li>
-          <strong className="text-[#e9ece8]">Legal obligation</strong> — keeping records of payments for tax and
-          accounting.
         </li>
       </UL>
 
@@ -239,7 +232,6 @@ function Privacy({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
         <li>Account and progress data: until you delete your account.</li>
         <li>Community posts: until you delete them or your account.</li>
         <li>Server logs: typically 30 days.</li>
-        <li>Payment and invoice records: up to 7 years, because tax law requires it.</li>
       </UL>
       <P>
         When you delete your account we remove your profile, progress, wallet, posts and uploaded images. Anonymous,
@@ -285,7 +277,7 @@ function Privacy({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
 /* Terms and Conditions                                                       */
 /* -------------------------------------------------------------------------- */
 
-function Terms({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
+function Terms() {
   return (
     <>
       <P>
@@ -297,7 +289,8 @@ function Terms({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
       <H2>1. What Tintomi is — and is not</H2>
       <P>
         {COMPANY.productName} is an educational product. It teaches personal finance through short lessons and a
-        practice-trading game played with simulated money.
+        practice-trading game played with simulated money. It is free: there is nothing to buy, no subscription, and
+        we never take payment from you.
       </P>
       <div className="mt-4 rounded-xl border border-[#c9a227]/40 bg-[#1a1608] p-4">
         <p className="text-[0.95rem] font-semibold leading-relaxed text-[#f4e9c8]">
@@ -313,7 +306,7 @@ function Terms({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
       <P>
         You must be at least {MINIMUM_AGE} years old. If you are under {PARENTAL_CONSENT_AGE}, or under the age of
         majority where you live, you may only use {COMPANY.productName} with the agreement of a parent or guardian, and
-        they accept these terms with you. Only a parent or guardian aged 18 or over may buy a paid subscription.
+        they accept these terms with you.
       </P>
 
       <H2>3. Your account</H2>
@@ -348,35 +341,22 @@ function Terms({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
         notice where the content is harmful.
       </P>
 
-      <H2>6. Tintomi Pro</H2>
-      <P>
-        Tintomi Pro is an optional paid subscription. The price, billing period and currency are shown on the checkout
-        page before you pay, and payment is taken by Stripe. It renews automatically each billing period until you
-        cancel, and you can cancel at any time from your account or by emailing <Mail /> — cancelling stops the next
-        renewal and you keep Pro until the end of the period you have paid for. Refunds are covered by our{' '}
-        <CrossLink slug="refunds" onNavigate={onNavigate} />.
-      </P>
-      <P>
-        If we change the price we will tell you at least 30 days beforehand, and you can cancel before the change takes
-        effect.
-      </P>
-
-      <H2>7. Acceptable use</H2>
+      <H2>6. Acceptable use</H2>
       <P>Do not attempt to break, overload, scrape, reverse-engineer or gain unauthorised access to the service.</P>
 
-      <H2>8. Our content</H2>
+      <H2>7. Our content</H2>
       <P>
         The lessons, text, design, code and branding of {COMPANY.productName} belong to us and are protected by
         copyright. You may use them for your own learning. You may not copy, republish or sell them.
       </P>
 
-      <H2>9. Availability</H2>
+      <H2>8. Availability</H2>
       <P>
         We provide the service "as is". We do not promise it will always be available, uninterrupted or error-free, and
-        we may change or discontinue features. We will give reasonable notice before withdrawing a paid feature.
+        we may change or discontinue features.
       </P>
 
-      <H2>10. Liability</H2>
+      <H2>9. Liability</H2>
       <P>
         Nothing in these terms limits liability for death or personal injury caused by negligence, for fraud, or for
         anything else that cannot legally be limited — including your non-excludable rights as a consumer, which these
@@ -384,23 +364,23 @@ function Terms({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
       </P>
       <P>
         Subject to that, we are not liable for indirect or consequential loss, or for any loss you suffer from real
-        financial decisions you make. Where we are liable, our total liability is limited to the greater of the amount
-        you paid us in the 12 months before the claim, or $50.
+        financial decisions you make. Because {COMPANY.productName} is free and you pay us nothing, where we are
+        liable our total liability to you is limited to $50.
       </P>
 
-      <H2>11. Ending the agreement</H2>
+      <H2>10. Ending the agreement</H2>
       <P>
         You may stop using {COMPANY.productName} and delete your account at any time. We may suspend or close an
         account that breaks these terms, and will explain why unless we are legally prevented from doing so.
       </P>
 
-      <H2>12. Changes to these terms</H2>
+      <H2>11. Changes to these terms</H2>
       <P>
         We may update these terms. If a change materially affects you we will give notice in the app or by email before
         it applies. Continuing to use the service after that means you accept the new terms.
       </P>
 
-      <H2>13. Governing law</H2>
+      <H2>12. Governing law</H2>
       <P>
         {COMPANY.country
           ? `These terms are governed by the law of ${COMPANY.country}, and its courts have jurisdiction.`
@@ -516,10 +496,6 @@ function Cookies({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
           <strong className="text-[#e9ece8]">Market data is fetched by our servers</strong>, not your browser, so the
           data provider never sees you.
         </li>
-        <li>
-          <strong className="text-[#e9ece8]">Stripe</strong> sets its own cookies, but only once you open the checkout
-          page on Stripe's own domain, and only to process the payment and prevent fraud.
-        </li>
       </UL>
 
       <H2>Turning it off</H2>
@@ -536,71 +512,6 @@ function Cookies({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Refund Policy                                                              */
-/* -------------------------------------------------------------------------- */
-
-function Refunds({ onNavigate }: { onNavigate: (slug: LegalSlug) => void }) {
-  return (
-    <>
-      <P>
-        This policy covers Tintomi Pro, the only thing we charge for. Everything else on {COMPANY.productName} is free,
-        and the practice portfolio is never real money, so there is nothing to refund there.
-      </P>
-
-      <H2>14-day right to cancel</H2>
-      <P>
-        If you are a consumer in the UK or the EEA you have 14 days from the start of your subscription to change your
-        mind and get a full refund, no reason needed. Because Tintomi Pro is digital content that starts immediately,
-        you are asked to agree to immediate access at checkout; we still honour the full 14-day window regardless, and
-        will not reduce your refund for the days you used it.
-      </P>
-      <P>We extend the same 14-day guarantee to everyone, wherever you live.</P>
-
-      <H2>After 14 days</H2>
-      <P>
-        You can cancel at any time. Cancelling stops the next payment and you keep Pro until the end of the period you
-        have already paid for. We do not automatically refund part-used periods after the first 14 days — but if
-        something went wrong, email us and we will look at it fairly.
-      </P>
-
-      <H2>We will always refund if</H2>
-      <UL>
-        <li>you were charged after cancelling;</li>
-        <li>you were charged twice, or charged the wrong amount;</li>
-        <li>Pro features were unavailable for a significant part of the period you paid for;</li>
-        <li>a subscription was bought on your card by a child without your permission.</li>
-      </UL>
-
-      <H2>How to cancel or ask for a refund</H2>
-      <P>
-        Email <Mail /> from the address on your account, or open your account settings and cancel there. Tell us your
-        account email and, if you are asking for a refund, roughly what went wrong.
-      </P>
-      <P>
-        We aim to reply within 3 working days. Approved refunds go back to the original payment method through Stripe,
-        usually within 5–10 working days depending on your bank. We do not charge a fee for refunding.
-      </P>
-
-      <H2>If a child bought a subscription</H2>
-      <P>
-        Only a parent or guardian aged 18 or over should buy Tintomi Pro. If a young person subscribed using your card
-        without your permission, email <Mail /> and we will cancel it and refund it in full.
-      </P>
-
-      <H2>Chargebacks</H2>
-      <P>
-        Please contact us before asking your bank to reverse a payment — it is faster for you and cheaper for us. If
-        you have already started a chargeback we will work with your bank to resolve it.
-      </P>
-      <P>
-        This policy sits alongside our <CrossLink slug="terms" onNavigate={onNavigate} /> and does not affect your
-        statutory rights. Last updated {LEGAL_LAST_UPDATED}.
-      </P>
-    </>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
 /* Page shell                                                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -608,7 +519,6 @@ const INTROS: Record<LegalSlug, string> = {
   privacy: 'What we collect, why, and how to get it deleted.',
   terms: 'The rules for using Tintomi.',
   cookies: 'What we store on your device, and why there is no banner.',
-  refunds: 'How cancelling and refunds work for Tintomi Pro.',
 }
 
 export function LegalPage({
@@ -651,9 +561,8 @@ export function LegalPage({
 
         <div className="mt-8">
           {slug === 'privacy' ? <Privacy onNavigate={onNavigate} /> : null}
-          {slug === 'terms' ? <Terms onNavigate={onNavigate} /> : null}
+          {slug === 'terms' ? <Terms /> : null}
           {slug === 'cookies' ? <Cookies onNavigate={onNavigate} /> : null}
-          {slug === 'refunds' ? <Refunds onNavigate={onNavigate} /> : null}
         </div>
 
         <nav aria-label="Other policies" className="mt-14 border-t border-[#232b25] pt-6">

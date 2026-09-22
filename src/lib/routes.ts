@@ -13,7 +13,6 @@ export const LEGAL_PAGES = {
   privacy: 'Privacy Policy',
   terms: 'Terms and Conditions',
   cookies: 'Cookie Policy',
-  refunds: 'Refund Policy',
 } as const
 
 export type LegalSlug = keyof typeof LEGAL_PAGES
