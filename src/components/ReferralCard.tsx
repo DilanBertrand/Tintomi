@@ -63,7 +63,7 @@ export function ReferralCard({ onAddXp }: { onAddXp: (amount: number) => Promise
         Share your code. When a friend enters it, you both get +{REFERRAL_XP} XP.
       </p>
       <div className="mt-3 flex items-center gap-2">
-        <p className="rounded-lg border border-[#232b25] bg-[#0f1412] px-4 py-2.5 font-mono text-lg font-semibold tracking-[0.25em] text-[#2979ff]">
+        <p className="rounded-lg border border-[#232b25] bg-[#0f1412] px-4 py-2.5 font-mono text-lg font-semibold tracking-[0.25em] text-[#5b9bff]">
           {myCode ?? '······'}
         </p>
         <button
@@ -87,7 +87,7 @@ export function ReferralCard({ onAddXp }: { onAddXp: (amount: number) => Promise
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 12))}
               placeholder="ABC123"
-              className="min-h-11 flex-1 rounded-lg border border-[#232b25] bg-[#0f1412] px-3 font-mono text-sm tracking-widest text-[#e9ece8] placeholder-[#5c665e] outline-none transition-colors focus:border-[#2979ff]"
+              className="min-h-11 flex-1 rounded-lg border border-[#232b25] bg-[#0f1412] px-3 font-mono text-sm tracking-widest text-[#e9ece8] placeholder-[#8d968e] outline-none transition-colors focus:border-[#2979ff]"
             />
             <button
               type="button"
@@ -100,7 +100,7 @@ export function ReferralCard({ onAddXp }: { onAddXp: (amount: number) => Promise
           </div>
         </div>
       ) : (
-        <p className="mt-4 text-xs text-[#5c665e]">Referral code already redeemed on this account.</p>
+        <p className="mt-4 text-xs text-[#8d968e]">Referral code already redeemed on this account.</p>
       )}
       {result ? (
         <p className={`mt-3 text-xs ${result.ok ? 'text-[#00d18f]' : 'text-[#ff6b5e]'}`}>{result.text}</p>

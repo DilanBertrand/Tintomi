@@ -64,7 +64,7 @@ type AuthContextValue = {
   authLinkError: string | null
   clearAuthLinkError: () => void
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signUp: (email: string, password: string) => Promise<SignUpResult>
+  signUp: (email: string, password: string, meta?: Record<string, unknown>) => Promise<SignUpResult>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -162,12 +162,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string, meta?: Record<string, unknown>) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { emailRedirectTo: getEmailRedirectUrl() },
+        // `meta` records the consent the user gave at signup (terms version and
+        // timestamp) so we can evidence it later, as GDPR accountability expects.
+        options: { emailRedirectTo: getEmailRedirectUrl(), data: meta },
       })
       if (error) {
         logAuthError('signUp', error)

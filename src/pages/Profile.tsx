@@ -10,11 +10,14 @@ import { ProgressBar } from '../components/ProgressBar'
 import { StaggerPage } from '../components/StaggerPage'
 import { getDisplayName } from '../lib/displayName'
 import { PROFILES_TABLE_SETUP_HINT, streakForDisplay } from '../lib/profiles'
+import { COMPANY } from '../lib/legal'
+import type { LegalSlug } from '../lib/routes'
 
 type ProfileProps = {
   xp: number
   portfolioValue: number
   onAddXp: (amount: number) => Promise<void> | void
+  onOpenLegal: (slug: LegalSlug) => void
 }
 
 function badgesForXp(xp: number) {
@@ -33,7 +36,7 @@ function avatarInitial(name: string): string {
   return c ? c.toUpperCase() : '?'
 }
 
-export function Profile({ xp, portfolioValue, onAddXp }: ProfileProps) {
+export function Profile({ xp, portfolioValue, onAddXp, onOpenLegal }: ProfileProps) {
   const { user, profile, signOut } = useAuth()
   const [signingOut, setSigningOut] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -108,7 +111,7 @@ export function Profile({ xp, portfolioValue, onAddXp }: ProfileProps) {
         <ReferralCard onAddXp={onAddXp} />
 
         <Card title="PORTFOLIO" subtitle="Cash + holdings">
-          <p className="font-mono text-3xl font-semibold text-[#2979ff]">${portfolioValue.toFixed(2)}</p>
+          <p className="font-mono text-3xl font-semibold text-[#5b9bff]">${portfolioValue.toFixed(2)}</p>
           <p className="mt-2 text-sm text-[#a7b0a8]">Not financial advice.</p>
         </Card>
 
@@ -118,7 +121,7 @@ export function Profile({ xp, portfolioValue, onAddXp }: ProfileProps) {
               <p className="font-mono text-4xl font-semibold text-[#e9ece8]">{streak}</p>
               <p className="text-sm text-[#a7b0a8]">days logged</p>
             </div>
-            <span className="rounded-full bg-[#2979ff]/10 px-3 py-1 text-xs font-semibold text-[#2979ff]">
+            <span className="rounded-full bg-[#2979ff]/10 px-3 py-1 text-xs font-semibold text-[#5b9bff]">
               {streak > 0 ? 'Active' : 'Start today'}
             </span>
           </div>
@@ -139,6 +142,41 @@ export function Profile({ xp, portfolioValue, onAddXp }: ProfileProps) {
               </div>
             ))}
           </div>
+        </Card>
+        <Card title="YOUR DATA" subtitle="Download, correct or delete it">
+          <p className="text-sm leading-relaxed text-[#c3cbc4]">
+            You can ask us for a copy of everything we hold about you, have it corrected, or have your account and
+            data permanently deleted. We answer within 30 days and never charge for it.
+          </p>
+          <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
+            <a
+              href={`mailto:${COMPANY.contactEmail}?subject=${encodeURIComponent('Delete my Tintomi account')}&body=${encodeURIComponent(
+                `Please delete my Tintomi account and all data associated with it.\n\nAccount email: ${user?.email ?? ''}\n`,
+              )}`}
+              className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-[#e06a55]/50 px-5 text-sm font-semibold text-[#e06a55] transition hover:bg-[#e06a55]/10"
+            >
+              Delete my account
+            </a>
+            <a
+              href={`mailto:${COMPANY.contactEmail}?subject=${encodeURIComponent('Copy of my Tintomi data')}&body=${encodeURIComponent(
+                `Please send me a copy of the data you hold about me.\n\nAccount email: ${user?.email ?? ''}\n`,
+              )}`}
+              className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-[#232b25] px-5 text-sm font-semibold text-[#e9ece8] transition hover:bg-[#1a221c]"
+            >
+              Request my data
+            </a>
+          </div>
+          <p className="mt-3 text-xs text-[#a7b0a8]">
+            More detail in our{' '}
+            <button
+              type="button"
+              onClick={() => onOpenLegal('privacy')}
+              className="text-[#5b9bff] underline underline-offset-2 hover:text-[#8fbaff]"
+            >
+              Privacy Policy
+            </button>
+            .
+          </p>
         </Card>
       </StaggerPage>
 

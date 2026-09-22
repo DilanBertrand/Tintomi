@@ -158,3 +158,59 @@ body.tm-dashboard {
   width: 0;
   height: 0;
 }
+
+/* ---------------------------------------------------------------------------
+   Accessibility
+   --------------------------------------------------------------------------- */
+
+/*
+ * Visible keyboard focus everywhere. Many components set `outline-none` for
+ * mouse users; this puts a ring back for keyboard users specifically, so the
+ * focus order is always followable. Applied with a high-specificity selector so
+ * it survives utility classes.
+ */
+:focus-visible {
+  outline: 3px solid #5b9bff !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+/* Inputs and checkboxes get the ring on plain :focus too — they are always
+   deliberate targets, and some browsers withhold :focus-visible on click. */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 3px solid #5b9bff !important;
+  outline-offset: 1px !important;
+}
+
+/* Skip link: off-screen until focused, then pinned to the top-left. */
+.tm-skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -100px;
+  z-index: 200;
+  border-radius: 9999px;
+  background: #e9ece8;
+  color: #0f1412;
+  padding: 0.75rem 1.25rem;
+  font-weight: 700;
+  transition: top 0.15s ease-in-out;
+}
+
+.tm-skip-link:focus {
+  top: 0.75rem;
+}
+
+/* Respect the OS "reduce motion" setting: this app animates a lot, and motion
+   can trigger nausea or migraine for some users. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

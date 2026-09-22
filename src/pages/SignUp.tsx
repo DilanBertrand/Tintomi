@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { MeshBackdrop } from '../components/MeshBackdrop'
 import { profileExistsForEmail } from '../lib/profiles'
 import { getEmailRedirectUrl, supabase } from '../lib/supabase'
+import { MINIMUM_AGE, PARENTAL_CONSENT_AGE } from '../lib/legal'
+import type { LegalSlug } from '../lib/routes'
 
 const head = 'font-bold tracking-tight'
 
@@ -26,14 +28,17 @@ function looksLikeDuplicateSignupError(message: string): boolean {
 type SignUpProps = {
   onBack: () => void
   onSwitchToLogin: () => void
+  onOpenLegal: (slug: LegalSlug) => void
 }
 
-export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
+export function SignUp({ onBack, onSwitchToLogin, onOpenLegal }: SignUpProps) {
   const { signUp } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
+  const [ageOk, setAgeOk] = useState(false)
+  const [termsOk, setTermsOk] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [resendSending, setResendSending] = useState(false)
   const [resendEmail, setResendEmail] = useState('')
@@ -70,6 +75,12 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
     setInfo(null)
     setSubmitting(true)
 
+    if (!ageOk || !termsOk) {
+      setError('Please confirm your age and accept the Terms and Privacy Policy.')
+      setSubmitting(false)
+      return
+    }
+
     try {
       const { exists: profileAlready, skipped: profileCheckSkipped } = await profileExistsForEmail(email)
       if (!profileCheckSkipped && profileAlready) {
@@ -77,7 +88,10 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
         return
       }
 
-      const result = await signUp(email, password)
+      const result = await signUp(email, password, {
+        terms_accepted_at: new Date().toISOString(),
+        age_confirmed_min: MINIMUM_AGE,
+      })
       if (result.error) {
         const duplicate =
           looksLikeDuplicateSignupError(result.error) ||
@@ -129,7 +143,7 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
         <button
           type="button"
           onClick={onBack}
-          className={`${head} mb-8 flex items-center gap-2 text-sm text-[#a7b0a8] transition hover:text-[#2979ff]`}
+          className={`${head} mb-8 flex items-center gap-2 text-sm text-[#a7b0a8] transition hover:text-[#5b9bff]`}
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back
@@ -157,7 +171,7 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-xl border border-[#232b25] bg-[#0f1412] px-4 py-3 text-[#e9ece8] outline-none transition placeholder:text-[#6b756c] focus:border-[#2979ff]/50 focus:ring-2 focus:ring-[#2979ff]/30"
+                className="w-full rounded-xl border border-[#232b25] bg-[#0f1412] px-4 py-3 text-[#e9ece8] outline-none transition placeholder:text-[#8d968e] focus:border-[#2979ff]/50 focus:ring-2 focus:ring-[#2979ff]/30"
                 placeholder="one you actually check"
               />
             </div>
@@ -188,7 +202,7 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
             ) : null}
             {info ? (
               <div className="space-y-3">
-                <p className="text-center text-sm font-semibold text-[#2979ff]" role="status">
+                <p className="text-center text-sm font-semibold text-[#5b9bff]" role="status">
                   {info}
                 </p>
                 <button
@@ -202,9 +216,58 @@ export function SignUp({ onBack, onSwitchToLogin }: SignUpProps) {
               </div>
             ) : null}
 
+            <fieldset className="space-y-3 border-t border-[#232b25] pt-4">
+              <legend className="sr-only">Age and terms</legend>
+              <div className="flex items-start gap-3">
+                <input
+                  id="signup-age"
+                  type="checkbox"
+                  checked={ageOk}
+                  onChange={(e) => setAgeOk(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-[#2979ff]"
+                />
+                <label htmlFor="signup-age" className="text-sm leading-relaxed text-[#c3cbc4]">
+                  I am {MINIMUM_AGE} or older.
+                </label>
+              </div>
+              <div className="flex items-start gap-3">
+                <input
+                  id="signup-terms"
+                  type="checkbox"
+                  checked={termsOk}
+                  onChange={(e) => setTermsOk(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-[#2979ff]"
+                />
+                <label htmlFor="signup-terms" className="text-sm leading-relaxed text-[#c3cbc4]">
+                  I agree to the{' '}
+                  <button
+                    type="button"
+                    onClick={() => onOpenLegal('terms')}
+                    className="text-[#5b9bff] underline underline-offset-2 hover:text-[#8fbaff]"
+                  >
+                    Terms and Conditions
+                  </button>{' '}
+                  and the{' '}
+                  <button
+                    type="button"
+                    onClick={() => onOpenLegal('privacy')}
+                    className="text-[#5b9bff] underline underline-offset-2 hover:text-[#8fbaff]"
+                  >
+                    Privacy Policy
+                  </button>
+                  .
+                </label>
+              </div>
+              <p className="text-xs leading-relaxed text-[#a7b0a8]">
+                Under {PARENTAL_CONSENT_AGE}? Please ask a parent or guardian to agree with you before signing up.
+                Tintomi teaches investing with simulated money — it is not financial advice and no real money is ever
+                at risk.
+              </p>
+            </fieldset>
+
             <button
               type="submit"
-              disabled={submitting || !!info}
+              disabled={submitting || !!info || !ageOk || !termsOk}
               className={`${head} flex w-full items-center justify-center gap-2 rounded-full bg-[#e9ece8] py-4 text-sm tracking-tight text-[#0f1412] transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60`}
             >
               {submitting ? (

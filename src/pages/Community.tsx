@@ -405,7 +405,7 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
             }}
             className={`mt-4 min-h-12 w-full rounded-lg py-3 text-sm font-semibold tracking-wide transition-opacity duration-200 ${
               isJoined
-                ? 'cursor-default border border-[#2979ff]/25 bg-[#2979ff]/10 text-[#2979ff]/80'
+                ? 'cursor-default border border-[#2979ff]/25 bg-[#2979ff]/10 text-[#5b9bff]/80'
                 : 'bg-[#e9ece8] text-[#0f1412] hover:opacity-90 active:opacity-80'
             }`}
           >
@@ -426,7 +426,7 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
                         <p className="text-xs text-[#a7b0a8]">XP</p>
                       </div>
                     </div>
-                    <span className="font-mono text-sm font-semibold text-[#2979ff]">{r.xp} XP</span>
+                    <span className="font-mono text-sm font-semibold text-[#5b9bff]">{r.xp} XP</span>
                   </div>
                 ))}
               </div>
@@ -466,7 +466,7 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
                       <p className="text-xs text-[#a7b0a8]">XP</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-semibold text-[#2979ff]">{r.xp} XP</span>
+                  <span className="font-mono text-sm font-semibold text-[#5b9bff]">{r.xp} XP</span>
                 </div>
               ))}
 
@@ -482,7 +482,7 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
                           <p className="text-xs text-yellow-200/80">XP</p>
                         </div>
                       </div>
-                      <span className="font-mono text-sm font-semibold text-[#2979ff]">{stickyMeRow.xp} XP</span>
+                      <span className="font-mono text-sm font-semibold text-[#5b9bff]">{stickyMeRow.xp} XP</span>
                     </div>
                   ) : null}
                 </>
@@ -509,7 +509,7 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
                   className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-all duration-200 ${
                     voted
                       ? isSelected
-                        ? 'cursor-default border border-[#2979ff]/55 bg-[#2979ff]/12 text-[#2979ff]'
+                        ? 'cursor-default border border-[#2979ff]/55 bg-[#2979ff]/12 text-[#5b9bff]'
                         : 'cursor-default border border-white/[0.07] bg-white/[0.02] text-[#a7b0a8] opacity-50'
                       : 'border border-[#232b25] border-t-white/15 bg-transparent text-gray-200 hover:bg-white/[0.08] active:scale-[0.99]'
                   }`}
@@ -518,7 +518,7 @@ export function Community({ userId, userXp, youDisplayName, onAddXp }: Community
                   {showResults ? (
                     <span
                       className={`shrink-0 font-mono text-sm tabular-nums ${
-                        isSelected ? 'font-semibold text-[#2979ff]' : 'text-[#a7b0a8]'
+                        isSelected ? 'font-semibold text-[#5b9bff]' : 'text-[#a7b0a8]'
                       }`}
                     >
                       {POLL_RESULT_PCTS[idx]}%

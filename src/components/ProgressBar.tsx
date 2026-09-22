@@ -18,7 +18,7 @@ export function ProgressBar({
       {label ? (
         <div className="mb-1 flex justify-between text-xs text-[#a7b0a8]">
           <span>{label}</span>
-          <span className="font-mono font-medium text-[#2979ff]">{Math.round(pct)}%</span>
+          <span className="font-mono font-medium text-[#5b9bff]">{Math.round(pct)}%</span>
         </div>
       ) : null}
       <div className="h-2 w-full overflow-hidden rounded-full bg-transparent">

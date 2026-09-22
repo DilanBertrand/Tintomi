@@ -27,7 +27,9 @@ import {
   type LearnStreak,
 } from './lib/streak'
 import { getDisplayName } from './lib/displayName'
-import { pathToTab, tabToPath } from './lib/routes'
+import { pathToLegalSlug, pathToTab, tabToPath, type LegalSlug } from './lib/routes'
+import { LegalPage } from './pages/Legal'
+import { SiteFooter } from './components/SiteFooter'
 
 function initLive(): LivePrices {
   const o: LivePrices = {}
@@ -155,6 +157,9 @@ export default function App() {
     portfolio: {},
   })
   const [livePrices, setLivePrices] = useState<LivePrices>(initLive)
+  const [legalSlug, setLegalSlug] = useState<LegalSlug | null>(() =>
+    typeof window === 'undefined' ? null : pathToLegalSlug(window.location.pathname),
+  )
   const [investFocusId, setInvestFocusId] = useState<string | null>(null)
   const [learnOpenItem, setLearnOpenItem] = useState<{ kind: 'lesson' | 'story'; id: string; nonce: number } | null>(null)
   const [chartSeries, setChartSeries] = useState<PriceHistory>({})
@@ -346,21 +351,22 @@ export default function App() {
 
   /** Keep / /login /signup in sync with auth gate when logged out. */
   useEffect(() => {
-    if (isLoggedIn || authLoading) return
+    if (isLoggedIn || authLoading || legalSlug) return
     const path =
       authGateView === 'signup' ? '/signup' : authGateView === 'login' ? '/login' : '/'
     if (window.location.pathname !== path) {
       window.history.replaceState(null, '', path)
     }
-  }, [authGateView, isLoggedIn, authLoading])
+  }, [authGateView, isLoggedIn, authLoading, legalSlug])
 
   useEffect(() => {
     if (isLoggedIn || authLoading) return
     const onPop = () => {
       const p = window.location.pathname.replace(/\/+$/, '') || '/'
+      setLegalSlug(pathToLegalSlug(p))
       if (p === '/signup') setAuthGateView('signup')
       else if (p === '/login') setAuthGateView('login')
-      else setAuthGateView('landing')
+      else if (!pathToLegalSlug(p)) setAuthGateView('landing')
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
@@ -474,6 +480,17 @@ export default function App() {
     window.history.pushState(null, '', tabToPath(next))
   }, [])
 
+  const openLegal = useCallback((slug: LegalSlug) => {
+    setLegalSlug(slug)
+    window.history.pushState(null, '', `/${slug}`)
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
+
+  const closeLegal = useCallback(() => {
+    setLegalSlug(null)
+    window.history.back()
+  }, [])
+
   const openStock = useCallback(
     (stockId: string) => {
       setInvestFocusId(stockId)
@@ -494,7 +511,7 @@ export default function App() {
 
   /** Sync dashboard tab with URL on load and after auth resolves. */
   useEffect(() => {
-    if (!isLoggedIn || authLoading) return
+    if (!isLoggedIn || authLoading || pathToLegalSlug(window.location.pathname)) return
     const t = pathToTab(window.location.pathname)
     const canonical = tabToPath(t)
     void Promise.resolve().then(() => {
@@ -508,7 +525,9 @@ export default function App() {
   useEffect(() => {
     if (!isLoggedIn) return
     const onPop = () => {
-      setTab(pathToTab(window.location.pathname))
+      const slug = pathToLegalSlug(window.location.pathname)
+      setLegalSlug(slug)
+      if (!slug) setTab(pathToTab(window.location.pathname))
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
@@ -528,9 +547,21 @@ export default function App() {
     window.scrollTo(0, 0)
   }, [tab, isLoggedIn])
 
+  // Policy pages render before any auth gate so a direct link (or a link from
+  // Stripe / an app store review) always resolves, signed in or not.
+  if (legalSlug) {
+    return (
+      <LegalPage
+        slug={legalSlug}
+        onBack={closeLegal}
+        onNavigate={openLegal}
+      />
+    )
+  }
+
   if (authLoading) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#0f1412] text-[#2979ff]">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#0f1412] text-[#5b9bff]">
         <Loader2 className="h-10 w-10 animate-spin" aria-hidden />
         <p className="text-sm font-semibold uppercase tracking-wide text-[#a7b0a8]">Loading...</p>
       </div>
@@ -568,12 +599,14 @@ export default function App() {
         <SignUp
           onBack={() => setAuthGateView('landing')}
           onSwitchToLogin={() => setAuthGateView('login')}
+          onOpenLegal={openLegal}
         />
       )
     }
     return (
       <div className="min-h-dvh bg-[#0f1412] text-gray-100">
-        <LandingPage onGoToSignUp={() => setAuthGateView('signup')} />
+        <LandingPage onGoToSignUp={() => setAuthGateView('signup')} onOpenLegal={openLegal} />
+        <SiteFooter onNavigate={openLegal} className="relative z-10" />
       </div>
     )
   }
@@ -592,19 +625,24 @@ export default function App() {
             exit={{ opacity: 0, y: 8 }}
             className="pointer-events-none fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 z-[120] -translate-x-1/2 rounded-full border border-[#2979ff]/40 bg-[#121a15] px-5 py-2.5 text-sm font-semibold text-[#e9ece8] shadow-lg shadow-black/50"
           >
-            Daily bonus <span className="text-[#2979ff]">+5 XP</span>
+            Daily bonus <span className="text-[#5b9bff]">+5 XP</span>
           </motion.div>
         ) : null}
       </AnimatePresence>
+      <a href="#main-content" className="tm-skip-link">
+        Skip to main content
+      </a>
       <div className="relative z-10 mx-auto w-full max-w-4xl flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10">
         <header className="relative mb-4 flex min-h-[2.75rem] w-full items-center justify-center pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:min-h-[3rem]">
           <p className="tm-chrome-wordmark-app max-w-[calc(100%-2rem)] text-center sm:max-w-none">TINTOMI</p>
           <NotificationBell userId={user.id} />
         </header>
         <AnimatePresence mode="wait">
-          <motion.div
+          <motion.main
             key={tab}
-            role="tabpanel"
+            id="main-content"
+            tabIndex={-1}
+            aria-label={tab}
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
@@ -631,6 +669,7 @@ export default function App() {
                 onCompleteStory={completeStory}
                 streakDays={displayLearnStreak(learnStreak)}
                 openItem={learnOpenItem}
+                onOpenLegal={openLegal}
               />
             ) : null}
             {tab === 'invest' ? (
@@ -649,9 +688,10 @@ export default function App() {
             {tab === 'community' ? (
               <Community userId={user.id} userXp={xp} youDisplayName={displayName} onAddXp={addXp} />
             ) : null}
-            {tab === 'profile' ? <Profile xp={xp} portfolioValue={portfolioValue} onAddXp={addXp} /> : null}
-          </motion.div>
+            {tab === 'profile' ? <Profile xp={xp} portfolioValue={portfolioValue} onAddXp={addXp} onOpenLegal={openLegal} /> : null}
+          </motion.main>
         </AnimatePresence>
+        <SiteFooter onNavigate={openLegal} className="mt-10" />
       </div>
       <Navbar active={tab} onChange={goToTab} />
     </div>

@@ -84,13 +84,13 @@ export function NotificationBell({ userId }: { userId: string }) {
             className="absolute right-0 top-12 z-[120] w-72 overflow-hidden rounded-xl border border-[#232b25] bg-[#121a15] shadow-xl shadow-black/50"
           >
             {items.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-[#5c665e]">No notifications yet.</p>
+              <p className="px-4 py-6 text-center text-sm text-[#8d968e]">No notifications yet.</p>
             ) : (
               <ul className="max-h-80 overflow-y-auto">
                 {items.map((n) => (
                   <li key={n.id} className="border-b border-[#232b25] px-4 py-3 last:border-b-0">
                     <p className="text-sm leading-snug text-[#e9ece8]">{n.message}</p>
-                    <p className="mt-1 text-xs text-[#5c665e]">{timeAgo(n.created_at)}</p>
+                    <p className="mt-1 text-xs text-[#8d968e]">{timeAgo(n.created_at)}</p>
                   </li>
                 ))}
               </ul>

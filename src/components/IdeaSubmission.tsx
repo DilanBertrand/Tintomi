@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Card } from './Card'
+import { COMPANY } from '../lib/legal'
+import type { LegalSlug } from '../lib/routes'
 
 type Status = 'idle' | 'open' | 'sending' | 'sent' | 'error'
 
@@ -10,7 +12,7 @@ const MAX_IDEA_LENGTH = 2000
  * Idea box: lets learners pitch new lessons/projects. Submissions go to
  * POST /api/submit-idea — the destination inbox lives server-side only.
  */
-export function IdeaSubmission() {
+export function IdeaSubmission({ onOpenLegal }: { onOpenLegal: (slug: LegalSlug) => void }) {
   const [status, setStatus] = useState<Status>('idle')
   const [idea, setIdea] = useState('')
   const [honeypot, setHoneypot] = useState('')
@@ -18,7 +20,8 @@ export function IdeaSubmission() {
 
   const open = status === 'open' || status === 'sending' || status === 'error'
 
-  async function send() {
+  async function send(e?: FormEvent) {
+    e?.preventDefault()
     if (idea.trim().length < 3) {
       setError('Give the idea a few more words first.')
       setStatus('error')
@@ -97,13 +100,18 @@ export function IdeaSubmission() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
+            <form onSubmit={(e) => void send(e)}>
+            <label htmlFor="idea-text" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#a7b0a8]">
+              Your idea
+            </label>
             <textarea
+              id="idea-text"
               value={idea}
               onChange={(e) => setIdea(e.target.value.slice(0, MAX_IDEA_LENGTH))}
               placeholder="A lesson on options greeks, a project that builds a budget app…"
               rows={4}
               autoFocus
-              className="w-full resize-y rounded-lg border border-[#232b25] bg-[#0f1412] p-3 text-sm text-[#e9ece8] placeholder-[#5c665e] outline-none transition-colors focus:border-[#2979ff]"
+              className="w-full resize-y rounded-lg border border-[#232b25] bg-[#0f1412] p-3 text-sm text-[#e9ece8] placeholder-[#8d968e] outline-none transition-colors focus:border-[#2979ff]"
             />
             {/* Honeypot: hidden from humans, bots fill it and get silently dropped */}
             <input
@@ -116,15 +124,14 @@ export function IdeaSubmission() {
               className="absolute -left-[9999px] h-0 w-0 opacity-0"
             />
             <div className="mt-1 flex items-center justify-between">
-              <p className="text-xs text-[#5c665e]">
+              <p className="text-xs text-[#8d968e]">
                 {idea.length} / {MAX_IDEA_LENGTH}
               </p>
               {status === 'error' ? <p className="text-xs text-[#ff6b5e]">{error}</p> : null}
             </div>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row">
               <button
-                type="button"
-                onClick={() => void send()}
+                type="submit"
                 disabled={status === 'sending'}
                 className="min-h-12 flex-1 rounded-full bg-[#e9ece8] py-3 text-sm font-semibold text-[#0f1412] transition-opacity duration-200 hover:opacity-90 disabled:opacity-60 sm:flex-none sm:px-6"
               >
@@ -141,6 +148,19 @@ export function IdeaSubmission() {
                 Cancel
               </button>
             </div>
+            <p className="mt-3 text-xs leading-relaxed text-[#a7b0a8]">
+              Your idea is emailed to the founder so we can read it. It is not posted publicly and is not linked to
+              your profile. Do not include personal details. See our{' '}
+              <button
+                type="button"
+                onClick={() => onOpenLegal('privacy')}
+                className="text-[#5b9bff] underline underline-offset-2 hover:text-[#8fbaff]"
+              >
+                Privacy Policy
+              </button>
+              , or email {COMPANY.contactEmail} to have it deleted.
+            </p>
+            </form>
           </motion.div>
         )}
       </AnimatePresence>

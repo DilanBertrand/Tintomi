@@ -38,6 +38,8 @@ function timeAgo(iso: string): string {
 function Avatar({ url, name, small }: { url: string | null; name: string; small?: boolean }) {
   const size = small ? 'h-7 w-7 text-xs' : 'h-9 w-9 text-sm'
   if (url) {
+    // Decorative: the author's name is always rendered next to the avatar, so
+    // describing the picture would just repeat it for screen reader users.
     return <img src={url} alt="" className={`${size} shrink-0 rounded-full object-cover`} />
   }
   return (
@@ -82,8 +84,8 @@ function ReplyRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <p className="text-xs font-semibold text-[#e9ece8]">{reply.author_name}</p>
-          {you ? <span className="text-[10px] text-[#5c665e]">you</span> : null}
-          <span className="text-[10px] text-[#5c665e]">· {timeAgo(reply.created_at)}</span>
+          {you ? <span className="text-[10px] text-[#8d968e]">you</span> : null}
+          <span className="text-[10px] text-[#8d968e]">· {timeAgo(reply.created_at)}</span>
           <StatusBadge status={reply.status} />
         </div>
         <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-[#d4d9d2]">{reply.content}</p>
@@ -91,7 +93,7 @@ function ReplyRow({
           <button
             type="button"
             onClick={() => onDelete(reply.id)}
-            className="mt-1 flex items-center gap-1 text-[11px] text-[#5c665e] transition-colors hover:text-[#ff6b5e]"
+            className="mt-1 flex items-center gap-1 text-[11px] text-[#8d968e] transition-colors hover:text-[#ff6b5e]"
           >
             <Trash2 className="h-3 w-3" aria-hidden />
             Delete
@@ -171,15 +173,15 @@ function PostRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <p className="text-sm font-semibold text-[#e9ece8]">{post.author_name}</p>
-            {you ? <span className="text-xs text-[#5c665e]">you</span> : null}
-            <span className="text-xs text-[#5c665e]">· {timeAgo(post.created_at)}</span>
+            {you ? <span className="text-xs text-[#8d968e]">you</span> : null}
+            <span className="text-xs text-[#8d968e]">· {timeAgo(post.created_at)}</span>
             <StatusBadge status={post.status} />
           </div>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#e9ece8]">{post.content}</p>
           {post.image_url ? (
             <img
               src={post.image_url}
-              alt=""
+              alt={`Image attached by ${post.author_name}`}
               loading="lazy"
               className="mt-3 max-h-96 w-full rounded-xl border border-[#232b25] object-cover"
             />
@@ -208,7 +210,7 @@ function PostRow({
 
           {/* Actions only on live (approved) posts in the feed. */}
           {post.status === 'approved' && !isAdmin ? (
-            <div className="mt-2.5 flex items-center gap-5 text-[#5c665e]">
+            <div className="mt-2.5 flex items-center gap-5 text-[#8d968e]">
               <button
                 type="button"
                 onClick={() => onToggleLike?.(post.id, like?.likedByMe ?? false)}
@@ -223,7 +225,7 @@ function PostRow({
               <button
                 type="button"
                 onClick={() => (needsUsername ? onRequestUsername?.() : setReplyOpen((v) => !v))}
-                className="flex items-center gap-1.5 text-xs transition-colors hover:text-[#2979ff]"
+                className="flex items-center gap-1.5 text-xs transition-colors hover:text-[#5b9bff]"
               >
                 <MessageCircle className="h-4 w-4" aria-hidden />
                 Reply
@@ -235,7 +237,7 @@ function PostRow({
             <button
               type="button"
               onClick={() => onDelete(post.id)}
-              className="mt-2 flex items-center gap-1 text-xs text-[#5c665e] transition-colors hover:text-[#ff6b5e]"
+              className="mt-2 flex items-center gap-1 text-xs text-[#8d968e] transition-colors hover:text-[#ff6b5e]"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden />
               Delete
@@ -250,7 +252,7 @@ function PostRow({
                 onChange={(e) => setReplyText(e.target.value.slice(0, MAX_POST_LENGTH))}
                 placeholder="Write a reply…"
                 autoFocus
-                className="min-h-10 flex-1 rounded-lg border border-[#232b25] bg-[#0f1412] px-3 text-sm text-[#e9ece8] placeholder-[#5c665e] outline-none focus:border-[#2979ff]"
+                className="min-h-10 flex-1 rounded-lg border border-[#232b25] bg-[#0f1412] px-3 text-sm text-[#e9ece8] placeholder-[#8d968e] outline-none focus:border-[#2979ff]"
               />
               <button
                 type="button"
@@ -268,7 +270,7 @@ function PostRow({
               <button
                 type="button"
                 onClick={() => setRepliesOpen((v) => !v)}
-                className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-[#5c665e] transition-colors hover:text-[#a7b0a8]"
+                className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-[#8d968e] transition-colors hover:text-[#a7b0a8]"
               >
                 <span className="h-px w-6 bg-[#232b25]" aria-hidden />
                 {repliesVisible
@@ -456,11 +458,15 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
               onChange={(e) => setDraft(e.target.value.slice(0, MAX_POST_LENGTH))}
               placeholder="Share a win, a question, or a money lesson…"
               rows={3}
-              className="w-full resize-y rounded-lg border border-[#232b25] bg-[#0f1412] p-3 text-sm text-[#e9ece8] placeholder-[#5c665e] outline-none transition-colors focus:border-[#2979ff]"
+              className="w-full resize-y rounded-lg border border-[#232b25] bg-[#0f1412] p-3 text-sm text-[#e9ece8] placeholder-[#8d968e] outline-none transition-colors focus:border-[#2979ff]"
             />
             {imagePreview ? (
               <div className="relative mt-2 w-fit">
-                <img src={imagePreview} alt="" className="max-h-48 rounded-xl border border-[#232b25]" />
+                <img
+                  src={imagePreview}
+                  alt="Preview of the image you attached"
+                  className="max-h-48 rounded-xl border border-[#232b25]"
+                />
                 <button
                   type="button"
                   onClick={() => attachImage(null)}
@@ -489,7 +495,7 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
                   <ImagePlus className="h-4 w-4" aria-hidden />
                   Photo
                 </button>
-                <p className="text-xs text-[#5c665e]">
+                <p className="text-xs text-[#8d968e]">
                   {draft.length} / {MAX_POST_LENGTH}
                 </p>
               </div>
@@ -502,7 +508,7 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
                 {posting ? 'Posting…' : 'Post'}
               </button>
             </div>
-            {notice ? <p className="mt-2 text-xs text-[#2979ff]">{notice}</p> : null}
+            {notice ? <p className="mt-2 text-xs text-[#5b9bff]">{notice}</p> : null}
             {error ? <p className="mt-2 text-xs text-[#ff6b5e]">{error}</p> : null}
           </>
         ) : (
@@ -518,7 +524,7 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
                   setUsernameError('')
                 }}
                 placeholder="unique_handle"
-                className="min-h-10 flex-1 rounded-lg border border-[#232b25] bg-[#0f1412] px-3 text-sm text-[#e9ece8] placeholder-[#5c665e] outline-none focus:border-[#2979ff]"
+                className="min-h-10 flex-1 rounded-lg border border-[#232b25] bg-[#0f1412] px-3 text-sm text-[#e9ece8] placeholder-[#8d968e] outline-none focus:border-[#2979ff]"
               />
               <button
                 type="button"
@@ -556,9 +562,9 @@ export function CommunityFeed({ userId, isAdmin }: CommunityFeedProps) {
 
       <div className="rounded-2xl border border-[#232b25] bg-[#121a15]">
         {loading ? (
-          <p className="px-4 py-6 text-center text-sm text-[#5c665e]">Loading the feed…</p>
+          <p className="px-4 py-6 text-center text-sm text-[#8d968e]">Loading the feed…</p>
         ) : feed.length === 0 ? (
-          <p className="px-4 py-6 text-center text-sm text-[#5c665e]">
+          <p className="px-4 py-6 text-center text-sm text-[#8d968e]">
             Nothing here yet. Be the first to share a win.
           </p>
         ) : (

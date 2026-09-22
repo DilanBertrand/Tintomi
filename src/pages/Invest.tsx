@@ -204,18 +204,18 @@ export function Invest({
       <Card title="Portfolio" subtitle="Cash + holdings" accent="neon" glowRgb="0, 255, 136">
         <div className="grid grid-cols-2 gap-3">
           <div className={subPanel}>
-            <p className="text-[10px] font-bold uppercase tracking-tighter text-[#6b756c]">Cash</p>
+            <p className="text-[10px] font-bold uppercase tracking-tighter text-[#8d968e]">Cash</p>
             <p className="mt-1 font-mono text-lg font-bold text-[#e9ece8]">${fmtMoney(balance)}</p>
           </div>
           <div className={subPanel}>
-            <p className="text-[10px] font-bold uppercase tracking-tighter text-[#2979ff]">Total</p>
-            <p className="mt-1 font-mono text-lg font-bold text-[#2979ff]">${fmtMoney(portfolioValue)}</p>
+            <p className="text-[10px] font-bold uppercase tracking-tighter text-[#5b9bff]">Total</p>
+            <p className="mt-1 font-mono text-lg font-bold text-[#5b9bff]">${fmtMoney(portfolioValue)}</p>
           </div>
         </div>
         {netWorthHistory.length >= 2 ? (
           <div className="mt-4">
             <div className="flex items-baseline justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-tighter text-[#6b756c]">
+              <p className="text-[10px] font-bold uppercase tracking-tighter text-[#8d968e]">
                 Net worth · last {netWorthHistory.length} days
               </p>
               {(() => {
@@ -241,7 +241,7 @@ export function Invest({
             />
           </div>
         ) : (
-          <p className="mt-4 text-xs text-[#5c665e]">
+          <p className="mt-4 text-xs text-[#8d968e]">
             Your net-worth chart starts building from today — check back tomorrow.
           </p>
         )}
@@ -264,25 +264,25 @@ export function Invest({
 
           <div className="mt-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-mono text-xs font-semibold text-[#2979ff]">{selected.symbol}</p>
+              <p className="font-mono text-xs font-semibold text-[#5b9bff]">{selected.symbol}</p>
               <h3 className="tm-premium-title truncate text-lg sm:text-xl">{selected.name}</h3>
-              <p className="mt-1 text-[10px] text-[#6b756c]">
+              <p className="mt-1 text-[10px] text-[#8d968e]">
                 {chart ? marketLabel(chart.marketState, selected.alwaysOpen) : 'Loading…'} · updates every minute
               </p>
             </div>
             <div className="shrink-0 text-right">
-              <p className={`font-mono text-2xl font-bold ${up ? 'text-[#2979ff]' : 'text-[#e06a55]'}`}>
+              <p className={`font-mono text-2xl font-bold ${up ? 'text-[#5b9bff]' : 'text-[#e06a55]'}`}>
                 ${fmtMoney(price)}
               </p>
               {rangeChange ? (
-                <p className={`font-mono text-xs font-semibold ${up ? 'text-[#2979ff]' : 'text-[#e06a55]'}`}>
+                <p className={`font-mono text-xs font-semibold ${up ? 'text-[#5b9bff]' : 'text-[#e06a55]'}`}>
                   {up ? '+' : ''}
                   {fmtMoney(rangeChange.abs)} ({up ? '+' : ''}
                   {rangeChange.pct.toFixed(2)}%)
-                  <span className="ml-1 text-[#6b756c]">{range === '1d' ? 'today' : range.toUpperCase()}</span>
+                  <span className="ml-1 text-[#8d968e]">{range === '1d' ? 'today' : range.toUpperCase()}</span>
                 </p>
               ) : (
-                <p className={`font-mono text-xs font-semibold ${up ? 'text-[#2979ff]' : 'text-[#e06a55]'}`}>
+                <p className={`font-mono text-xs font-semibold ${up ? 'text-[#5b9bff]' : 'text-[#e06a55]'}`}>
                   {up ? '+' : ''}
                   {dayChangePct.toFixed(2)}% today
                 </p>
@@ -298,7 +298,7 @@ export function Invest({
                   type="button"
                   onClick={() => setRange(r.id)}
                   className={`rounded-md px-2.5 py-1 font-mono text-[11px] font-bold transition-colors ${
-                    r.id === range ? 'bg-[#232b25] text-[#e9ece8]' : 'text-[#6b756c] hover:text-[#a7b0a8]'
+                    r.id === range ? 'bg-[#232b25] text-[#e9ece8]' : 'text-[#8d968e] hover:text-[#a7b0a8]'
                   }`}
                 >
                   {r.label}
@@ -313,7 +313,7 @@ export function Invest({
                   onClick={() => setChartStyle(st)}
                   aria-pressed={chartStyle === st}
                   className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter transition-colors ${
-                    chartStyle === st ? 'bg-[#232b25] text-[#e9ece8]' : 'text-[#6b756c] hover:text-[#a7b0a8]'
+                    chartStyle === st ? 'bg-[#232b25] text-[#e9ece8]' : 'text-[#8d968e] hover:text-[#a7b0a8]'
                   }`}
                 >
                   {st === 'candles' ? 'Candles' : 'Line'}
@@ -326,6 +326,7 @@ export function Invest({
             <PriceChart
               points={chart?.points ?? []}
               range={range}
+              assetName={selected.name}
               style={chartStyle}
               previousClose={chart?.previousClose}
               loading={chartLoading}
@@ -334,10 +335,10 @@ export function Invest({
 
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#232b25] pt-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-tighter text-[#6b756c]">You own</p>
+              <p className="text-[10px] font-bold uppercase tracking-tighter text-[#8d968e]">You own</p>
               <p className="font-mono text-sm text-[#a7b0a8]">
                 {holdingLabel(selected, shares)}
-                {shares > 0 ? <span className="text-[#6b756c]"> · ${fmtMoney(shares * unitPrice)}</span> : null}
+                {shares > 0 ? <span className="text-[#8d968e]"> · ${fmtMoney(shares * unitPrice)}</span> : null}
               </p>
             </div>
             <div className="flex gap-2.5">
@@ -359,7 +360,7 @@ export function Invest({
               </button>
             </div>
           </div>
-          <p className="mt-3 text-xs leading-relaxed text-[#6b756c]">{selected.blurb}</p>
+          <p className="mt-3 text-xs leading-relaxed text-[#8d968e]">{selected.blurb}</p>
         </Card>
       </div>
 
@@ -383,7 +384,7 @@ export function Invest({
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-[#e9ece8]">{s.name}</p>
-                  <p className="font-mono text-[11px] text-[#6b756c]">
+                  <p className="font-mono text-[11px] text-[#8d968e]">
                     {s.symbol}
                     {held > 0 ? ` · ${holdingLabel(s, held)} owned` : ''}
                   </p>
@@ -391,7 +392,7 @@ export function Invest({
                 <Sparkline values={spark.length >= 2 ? spark : [p, p]} width={72} height={28} positive={sUp} />
                 <div className="w-[5.5rem] shrink-0 text-right">
                   <p className="font-mono text-sm font-bold text-[#e9ece8]">${fmtMoney(p)}</p>
-                  <p className={`font-mono text-xs font-semibold ${sUp ? 'text-[#2979ff]' : 'text-[#e06a55]'}`}>
+                  <p className={`font-mono text-xs font-semibold ${sUp ? 'text-[#5b9bff]' : 'text-[#e06a55]'}`}>
                     {sUp ? '+' : ''}
                     {pct.toFixed(2)}%
                   </p>
@@ -403,7 +404,7 @@ export function Invest({
       </motion.div>
 
       <Card title="Disclosure" subtitle="Not real markets" accent="neutral" glowRgb="160, 165, 175">
-        <p className="text-sm leading-relaxed text-[#6b756c]">
+        <p className="text-sm leading-relaxed text-[#8d968e]">
           Prices come from public market data and may be delayed. Trades here use play money only. Not advice.
         </p>
       </Card>

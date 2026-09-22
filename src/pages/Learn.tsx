@@ -16,6 +16,7 @@ import {
 } from '../data/lessons'
 import { storyLessons, XP_PER_STORY, type StoryLesson } from '../data/stories'
 import { themeForLevel } from '../learn-themes'
+import type { LegalSlug } from '../lib/routes'
 import { localProgressKeys } from '../lib/localProgress'
 import { fadeSlideUp } from '../motion/variants'
 
@@ -32,6 +33,7 @@ type LearnProps = {
   streakDays: number
   /** Lesson or story to open immediately (set when arriving from Home). */
   openItem?: { kind: 'lesson' | 'story'; id: string; nonce: number } | null
+  onOpenLegal: (slug: LegalSlug) => void
 }
 
 function isLevelComplete(levelIndex: number, done: Set<string>) {
@@ -107,6 +109,7 @@ export function Learn({
   onCompleteStory,
   streakDays,
   openItem,
+  onOpenLegal,
 }: LearnProps) {
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -335,7 +338,7 @@ export function Learn({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <p className="text-[11px] font-bold uppercase tracking-tighter text-[#3B82F6]">Academy</p>
+        <p className="text-[11px] font-bold uppercase tracking-tighter text-[#5b9bff]">Academy</p>
         <h1 className="tm-premium-title mt-1 text-3xl sm:text-4xl">Brain gains</h1>
         <p className="mt-1 max-w-md text-sm text-[#a7b0a8]">
           Structured lessons with quizzes. Complete levels to unlock the next track.
@@ -346,7 +349,7 @@ export function Learn({
         <Card title="Progress" subtitle="Experience points">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="font-mono text-3xl font-semibold text-[#2979ff]">{xp}</p>
+              <p className="font-mono text-3xl font-semibold text-[#5b9bff]">{xp}</p>
               <p className="text-xs text-[#a7b0a8]">Total XP</p>
             </div>
             <div>
@@ -366,7 +369,7 @@ export function Learn({
             <div>
               <p className="flex items-center gap-1.5 font-mono text-3xl font-semibold text-[#e9ece8]">
                 <Flame
-                  className={`h-6 w-6 ${streakDays > 0 ? 'text-[#2979ff]' : 'text-[#39423b]'}`}
+                  className={`h-6 w-6 ${streakDays > 0 ? 'text-[#5b9bff]' : 'text-[#6b756c]'}`}
                   strokeWidth={2}
                   aria-hidden
                 />
@@ -376,7 +379,7 @@ export function Learn({
             </div>
             <div className="text-right">
               <p className="text-xs text-[#a7b0a8]">Your level</p>
-              <p className="font-mono text-3xl font-semibold text-[#2979ff]">{currentLevel}</p>
+              <p className="font-mono text-3xl font-semibold text-[#5b9bff]">{currentLevel}</p>
             </div>
           </div>
           <div className="mt-4">
@@ -388,7 +391,7 @@ export function Learn({
           </div>
         </Card>
 
-        <IdeaSubmission />
+        <IdeaSubmission onOpenLegal={onOpenLegal} />
 
         <div className="flex w-fit rounded-full border border-[#232b25] bg-[#121a15] p-1">
           <button
@@ -419,7 +422,7 @@ export function Learn({
                 <div key={s.id} className={levelShell}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5b9bff]">
                         {s.minutes} min read · +{XP_PER_STORY} XP{read ? ' · done' : ''}
                       </p>
                       <h3 className="mt-1 text-lg font-semibold text-[#e9ece8]">{s.title}</h3>
@@ -574,12 +577,12 @@ export function Learn({
             >
               {storyReward !== null ? (
                 <div className="py-2 text-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5b9bff]">
                     Lesson complete
                   </p>
                   <h3 className="mt-1 text-2xl font-semibold text-[#e9ece8]">{story.title}</h3>
                   {storyReward > 0 ? (
-                    <p className="mt-3 text-sm text-[#2979ff]">+{storyReward} XP earned</p>
+                    <p className="mt-3 text-sm text-[#5b9bff]">+{storyReward} XP earned</p>
                   ) : (
                     <p className="mt-3 text-sm text-[#a7b0a8]">
                       Already completed — no new XP, but good to revisit.
@@ -775,7 +778,7 @@ export function Learn({
                         transition={{ duration: 0.25 }}
                       >
                         <div className="mt-4 rounded-lg border-l-[3px] border-[#2979ff] bg-[#2979ff]/8 px-3 py-3">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5b9bff]">
                             Why
                           </p>
                           <p className="mt-1 text-sm leading-relaxed text-[#e9ece8]">{currentQ.why}</p>
@@ -799,7 +802,7 @@ export function Learn({
                     {session.review ? 'Review done' : 'Score check'}
                   </h3>
                   <p className="mt-2 text-sm text-[#a7b0a8]">
-                    You got <span className="font-mono font-semibold text-[#2979ff]">{correctCount}</span> /{' '}
+                    You got <span className="font-mono font-semibold text-[#5b9bff]">{correctCount}</span> /{' '}
                     {questionCount} correct.
                   </p>
                   {session.review ? (
@@ -814,7 +817,7 @@ export function Learn({
                         <>
                           <p className="mt-2 text-sm text-[#e9ece8]">+{XP_PER_LESSON} XP unlocked.</p>
                           {earnedBonus > 0 ? (
-                            <p className="mt-1 text-sm text-[#2979ff]">
+                            <p className="mt-1 text-sm text-[#5b9bff]">
                               +{earnedBonus} bonus XP
                               {perfect ? ' (perfect score' : ' ('}
                               {perfect && speedBonus > 0 ? ' + ' : ''}
@@ -850,7 +853,7 @@ export function Learn({
 
               {phase === 'trackdone' ? (
                 <>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2979ff]">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5b9bff]">
                     Track complete
                   </p>
                   <h3 className="mt-1 text-2xl font-semibold text-[#e9ece8]">{completedTrackTitle}: done.</h3>

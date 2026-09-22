@@ -157,7 +157,7 @@ export function Home({
       >
         <div className="mb-4 flex items-baseline justify-between px-1">
           <h2 className="tm-headline text-left text-sm sm:text-base">Trending</h2>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#6b756c]">Biggest moves today</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8d968e]">Biggest moves today</p>
         </div>
         <div className="space-y-2">
           {movers.map(({ stock, pct }, i) => {
@@ -182,7 +182,7 @@ export function Home({
                   <div className="min-w-0">
                     <p className="text-sm font-bold uppercase tracking-tight text-[#e9ece8]">
                       {stock.name}{' '}
-                      <span className={`font-mono ${up ? 'text-[#2979ff]' : 'text-[#e06a55]'}`}>
+                      <span className={`font-mono ${up ? 'text-[#5b9bff]' : 'text-[#e06a55]'}`}>
                         {up ? '+' : ''}
                         {pct.toFixed(2)}%
                       </span>
@@ -216,12 +216,12 @@ export function Home({
         <div className="mb-4 flex flex-col gap-2 px-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div>
             <h2 className="tm-headline min-w-0 text-sm sm:text-base">Learn in 60s</h2>
-            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-[#6b756c]">Today's picks, new every day</p>
+            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-[#8d968e]">Today's picks, new every day</p>
           </div>
           <button
             type="button"
             onClick={goLearnTab}
-            className="group flex w-fit shrink-0 items-center gap-1 self-start rounded-full border border-[#232b25] bg-transparent py-2 pl-3 pr-2 text-xs font-bold uppercase tracking-wide text-[#2979ff] transition hover:border-[#2979ff]/35 hover:bg-white/[0.08] sm:self-auto sm:text-sm"
+            className="group flex w-fit shrink-0 items-center gap-1 self-start rounded-full border border-[#232b25] bg-transparent py-2 pl-3 pr-2 text-xs font-bold uppercase tracking-wide text-[#5b9bff] transition hover:border-[#2979ff]/35 hover:bg-white/[0.08] sm:self-auto sm:text-sm"
           >
             View all
             <ChevronRight
@@ -236,7 +236,7 @@ export function Home({
           <button
             type="button"
             onClick={scrollLearnStripLeft}
-            className="absolute left-1 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#232b25] bg-[#121a15] text-[#a7b0a8] transition hover:border-[#2979ff]/55 hover:text-[#2979ff]  sm:flex sm:left-0 md:left-[-8px]"
+            className="absolute left-1 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#232b25] bg-[#121a15] text-[#a7b0a8] transition hover:border-[#2979ff]/55 hover:text-[#5b9bff]  sm:flex sm:left-0 md:left-[-8px]"
             aria-label="Scroll learn cards left"
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.25} aria-hidden />
@@ -244,7 +244,7 @@ export function Home({
           <button
             type="button"
             onClick={scrollLearnStripRight}
-            className="absolute right-1 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#232b25] bg-[#121a15] text-[#a7b0a8] transition hover:border-[#2979ff]/55 hover:text-[#2979ff]  sm:flex sm:right-0 md:right-[-8px]"
+            className="absolute right-1 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#232b25] bg-[#121a15] text-[#a7b0a8] transition hover:border-[#2979ff]/55 hover:text-[#5b9bff]  sm:flex sm:right-0 md:right-[-8px]"
             aria-label="Scroll learn cards right"
           >
             <ChevronRight className="h-5 w-5" strokeWidth={2.25} aria-hidden />
@@ -269,7 +269,7 @@ export function Home({
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1a221c] ring-1 ring-[#232b25]">
                       <SnippetIcon className="text-[#e9ece8]" strokeWidth={2.1} size={24} />
                     </div>
-                    <span className="inline-block rounded-md bg-[#1a221c] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#2979ff] ring-1 ring-[#232b25]">
+                    <span className="inline-block rounded-md bg-[#1a221c] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#5b9bff] ring-1 ring-[#232b25]">
                       {c.tag}
                     </span>
                   </div>
@@ -300,13 +300,13 @@ export function Home({
               <Newspaper className="text-[#e9ece8]" strokeWidth={2} size={28} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#2979ff]">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#5b9bff]">
                 In the news · {newsStock.name}
               </p>
               {headline ? (
                 <>
                   <p className="tm-headline mt-2 text-xl leading-tight text-[#e9ece8] sm:text-2xl">{headline.title}</p>
-                  <p className="mt-3 text-sm text-[#6b756c]">
+                  <p className="mt-3 text-sm text-[#8d968e]">
                     {headline.publisher}
                     {headline.publishedAt ? ` · ${timeAgo(headline.publishedAt)}` : ''}
                   </p>
@@ -316,7 +316,7 @@ export function Home({
                   No fresh headlines for {newsStock.name} right now.
                 </p>
               ) : (
-                <p className="mt-2 text-sm text-[#6b756c]">Loading headline…</p>
+                <p className="mt-2 text-sm text-[#8d968e]">Loading headline…</p>
               )}
             </div>
           </div>

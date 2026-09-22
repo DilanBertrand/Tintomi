@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Loader2, X } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { updateProfileFields } from '../lib/profiles'
 import { isUsernameRestricted } from '../utils/profanityFilter'
@@ -17,6 +17,55 @@ export function ProfileSettingsModal({ initialFullName, initialUsername, onClose
   const [username, setUsername] = useState(initialUsername)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const savingRef = useRef(saving)
+
+  useEffect(() => {
+    savingRef.current = saving
+  }, [saving])
+
+  /*
+   * Dialog keyboard contract: Escape closes, Tab cycles inside the panel, and
+   * focus starts on the first field instead of being left behind on the page.
+   * Focus returns to whatever opened the modal when it unmounts.
+   */
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    const focusables = () =>
+      Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null)
+
+    focusables()[0]?.focus()
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !savingRef.current) {
+        e.preventDefault()
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab') return
+      const items = focusables()
+      if (items.length === 0) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      opener?.focus?.()
+    }
+  }, [onClose])
 
   if (!user) return null
 
@@ -74,6 +123,7 @@ export function ProfileSettingsModal({ initialFullName, initialUsername, onClose
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 16 }}
         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        ref={panelRef}
         className="relative z-10 max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-[#232b25] bg-[#0a0f1a] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:max-h-[85dvh] sm:rounded-3xl"
       >
         <div className="mb-4 flex items-start justify-between gap-3">

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://tintomi.com/</loc>
-  </url>
-  <url>
-    <loc>https://tintomi.com/signup</loc>
-  </url>
-  <url>
-    <loc>https://tintomi.com/login</loc>
-  </url>
+  <url><loc>https://www.tintomi.com/</loc></url>
+  <url><loc>https://www.tintomi.com/signup</loc></url>
+  <url><loc>https://www.tintomi.com/login</loc></url>
+  <url><loc>https://www.tintomi.com/privacy</loc></url>
+  <url><loc>https://www.tintomi.com/terms</loc></url>
+  <url><loc>https://www.tintomi.com/cookies</loc></url>
+  <url><loc>https://www.tintomi.com/refunds</loc></url>
 </urlset>

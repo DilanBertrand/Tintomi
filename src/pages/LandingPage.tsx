@@ -1,12 +1,16 @@
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, Flame, TrendingUp, Users, Zap } from 'lucide-react'
 import { MeshBackdrop } from '../components/MeshBackdrop'
 import { Sparkline } from '../components/Sparkline'
+import { supabase } from '../lib/supabase'
+
+import type { LegalSlug } from '../lib/routes'
 
 type LandingPageProps = {
   onGoToSignUp: () => void
+  onOpenLegal: (slug: LegalSlug) => void
 }
 
 const head = 'font-bold tracking-tight'
@@ -81,8 +85,36 @@ const featureIconClass = 'h-10 w-10 shrink-0'
 const featureIconStroke = 1.75
 const featureCardHeadline = 'tm-serif text-2xl text-[#e9ece8]'
 
-function WaitlistView({ onBack }: { onBack: () => void }) {
-  const [joined, setJoined] = useState(false)
+function WaitlistView({
+  onBack,
+  onOpenLegal,
+}: {
+  onBack: () => void
+  onOpenLegal: (slug: LegalSlug) => void
+}) {
+  const [email, setEmail] = useState('')
+  const [consent, setConsent] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'saving' | 'joined'>('idle')
+  const [error, setError] = useState<string | null>(null)
+
+  async function join(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    const trimmed = email.trim().toLowerCase()
+    if (!trimmed) return
+    setStatus('saving')
+    const { error: insertErr } = await supabase.from('waitlist').insert({ email: trimmed })
+    if (insertErr) {
+      // A duplicate means they are already on the list — that is a success for them.
+      const duplicate = insertErr.code === '23505' || insertErr.message.toLowerCase().includes('duplicate')
+      if (!duplicate) {
+        setError('Could not save your email. Please try again.')
+        setStatus('idle')
+        return
+      }
+    }
+    setStatus('joined')
+  }
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center px-4 text-center">
@@ -95,28 +127,82 @@ function WaitlistView({ onBack }: { onBack: () => void }) {
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Back
       </button>
-      <div className="relative z-10 flex flex-col items-center">
+      <div className="relative z-10 flex w-full max-w-md flex-col items-center">
         <p className="tm-chrome-wordmark tm-chrome-wordmark-hero">TINTOMI</p>
         <h1 className="tm-serif relative z-10 mx-auto mt-6 max-w-full px-3 text-center text-[clamp(2rem,7vw,4.5rem)] leading-[1.1] text-[#e9ece8]">
           Waitlist
         </h1>
-        <p className="relative z-10 mx-auto mt-6 max-w-md text-base leading-relaxed text-[#a7b0a8] sm:text-[1.125rem]">
-          The app is not out yet. Get on the list and we will let you know the moment it is.
-        </p>
-        <button
-          type="button"
-          onClick={() => setJoined(true)}
-          disabled={joined}
-          className={`${head} relative z-10 mt-8 flex w-full max-w-[min(100%,20rem)] cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-full bg-[#e9ece8] px-8 py-4 text-base tracking-tight text-[#0f1412] transition-transform hover:scale-[1.03] active:scale-[0.99] disabled:cursor-default disabled:hover:scale-100 sm:px-12 sm:py-5 sm:text-lg`}
-        >
-          {joined ? 'Waitlist joined' : 'Join the waitlist'}
-        </button>
+        {status === 'joined' ? (
+          <p className="relative z-10 mx-auto mt-6 max-w-md text-base leading-relaxed text-[#e9ece8]" role="status">
+            You are on the list. We will email {email.trim().toLowerCase()} when the app is out, and nothing else.
+          </p>
+        ) : (
+          <>
+            <p className="relative z-10 mx-auto mt-6 max-w-md text-base leading-relaxed text-[#a7b0a8] sm:text-[1.125rem]">
+              The app is not out yet. Leave your email and we will let you know the moment it is.
+            </p>
+            <form onSubmit={join} className="mt-8 w-full text-left">
+              <label
+                htmlFor="waitlist-email"
+                className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#a7b0a8]"
+              >
+                Email
+              </label>
+              <input
+                id="waitlist-email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(ev) => setEmail(ev.target.value)}
+                className="w-full rounded-xl border border-[#232b25] bg-[#0f1412] px-4 py-3 text-[#e9ece8] outline-none transition placeholder:text-[#8d968e] focus:border-[#2979ff]/50 focus:ring-2 focus:ring-[#2979ff]/30"
+                placeholder="you@example.com"
+              />
+
+              <div className="mt-4 flex items-start gap-3">
+                <input
+                  id="waitlist-consent"
+                  type="checkbox"
+                  required
+                  checked={consent}
+                  onChange={(ev) => setConsent(ev.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-[#2979ff]"
+                />
+                <label htmlFor="waitlist-consent" className="text-sm leading-relaxed text-[#c3cbc4]">
+                  Email me once when the app launches. I have read the{' '}
+                  <button
+                    type="button"
+                    onClick={() => onOpenLegal('privacy')}
+                    className="text-[#5b9bff] underline underline-offset-2 hover:text-[#8fbaff]"
+                  >
+                    Privacy Policy
+                  </button>
+                  . You can ask us to delete your address at any time.
+                </label>
+              </div>
+
+              {error ? (
+                <p className="mt-3 text-sm font-semibold text-[#ff6b5e]" role="alert">
+                  {error}
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={status === 'saving' || !consent}
+                className={`${head} relative z-10 mt-6 flex w-full cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-full bg-[#e9ece8] px-8 py-4 text-base tracking-tight text-[#0f1412] transition-transform hover:scale-[1.02] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100`}
+              >
+                {status === 'saving' ? 'Adding you…' : 'Join the waitlist'}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   )
 }
 
-export function LandingPage({ onGoToSignUp }: LandingPageProps) {
+export function LandingPage({ onGoToSignUp, onOpenLegal }: LandingPageProps) {
   const go = useCallback((id: string) => () => scrollToId(id), [])
   const [showHeroScrollCue, setShowHeroScrollCue] = useState(true)
   const [showWaitlist, setShowWaitlist] = useState(false)
@@ -129,7 +215,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
   }, [])
 
   if (showWaitlist) {
-    return <WaitlistView onBack={() => setShowWaitlist(false)} />
+    return <WaitlistView onBack={() => setShowWaitlist(false)} onOpenLegal={onOpenLegal} />
   }
 
   return (
@@ -144,13 +230,13 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
               className="hidden items-center gap-5 text-sm font-semibold text-[#a7b0a8] lg:gap-6 md:flex"
               aria-label="Primary"
             >
-              <button type="button" onClick={go('mission')} className="transition hover:text-[#2979ff]">
+              <button type="button" onClick={go('mission')} className="transition hover:text-[#5b9bff]">
                 Our Mission
               </button>
-              <button type="button" onClick={go('how')} className="transition hover:text-[#2979ff]">
+              <button type="button" onClick={go('how')} className="transition hover:text-[#5b9bff]">
                 How it Works
               </button>
-              <button type="button" onClick={go('features')} className="transition hover:text-[#2979ff]">
+              <button type="button" onClick={go('features')} className="transition hover:text-[#5b9bff]">
                 Features
               </button>
             </nav>
@@ -188,13 +274,13 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
           className="mx-auto mt-2 flex max-w-6xl flex-wrap justify-center gap-x-4 gap-y-1.5 px-1 text-[11px] font-semibold text-[#a7b0a8] sm:mt-3 sm:gap-x-5 sm:text-xs md:hidden"
           aria-label="Primary mobile"
         >
-          <button type="button" onClick={go('mission')} className="hover:text-[#2979ff]">
+          <button type="button" onClick={go('mission')} className="hover:text-[#5b9bff]">
             Mission
           </button>
-          <button type="button" onClick={go('how')} className="hover:text-[#2979ff]">
+          <button type="button" onClick={go('how')} className="hover:text-[#5b9bff]">
             How it Works
           </button>
-          <button type="button" onClick={go('features')} className="hover:text-[#2979ff]">
+          <button type="button" onClick={go('features')} className="hover:text-[#5b9bff]">
             Features
           </button>
         </nav>
@@ -244,7 +330,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
         <section id="mission" className="relative z-20 -mt-10 scroll-mt-28 px-4 pb-10 md:-mt-16 md:px-8">
           <motion.div {...fadeUp} className="mx-auto max-w-5xl">
             <GlowCard accent="blue" className="border border-[#232b25]">
-              <p className={`${head} mb-4 text-sm font-black tracking-widest text-[#2979ff]`}>Why this exists</p>
+              <p className={`${head} mb-4 text-sm font-black tracking-widest text-[#5b9bff]`}>Why this exists</p>
               <h2 className={`${sectionTitle} max-w-4xl text-balance`}>
                 School covered the mitochondria. It skipped the money.
               </h2>
@@ -254,7 +340,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
                 the practice round that should have happened first.
               </p>
               <p className={`${body} mt-5 max-w-2xl text-pretty text-[#a7b0a8]`}>
-                It is built for teens, it is free, and none of the money is real. The habits are.
+                It is built for teens, the core is free, and none of the money is real. The habits are.
               </p>
             </GlowCard>
           </motion.div>
@@ -302,7 +388,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
                   <GlowCard accent={item.accent} className="h-full">
                     <div className="flex min-h-0 flex-1 flex-col gap-4">
                       <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                        <span className="font-mono text-4xl font-semibold text-[#39423b] sm:text-5xl">{item.step}</span>
+                        <span className="font-mono text-4xl font-semibold text-[#6b756c] sm:text-5xl">{item.step}</span>
                         <item.icon className="h-10 w-10 shrink-0 text-[#a7b0a8]" strokeWidth={1.75} aria-hidden />
                       </div>
                       <h3 className="tm-serif text-2xl text-[#e9ece8] sm:text-3xl">{item.title}</h3>
@@ -331,7 +417,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
                 <GlowCard accent="green" className="h-full">
                   <div className="flex min-h-0 flex-1 flex-col gap-4">
                     <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
-                      <Zap className={`${featureIconClass} text-[#2979ff]`} strokeWidth={featureIconStroke} aria-hidden />
+                      <Zap className={`${featureIconClass} text-[#5b9bff]`} strokeWidth={featureIconStroke} aria-hidden />
                       <h3 className={featureCardHeadline}>The practice floor</h3>
                     </div>
                     <p className={`${body} min-h-0 flex-1 text-pretty text-[#e9ece8]`}>
@@ -349,7 +435,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
                 <GlowCard accent="blue" className="h-full">
                   <div className="flex min-h-0 flex-1 flex-col gap-4">
                     <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
-                      <Flame className={`${featureIconClass} text-[#2979ff]`} strokeWidth={featureIconStroke} aria-hidden />
+                      <Flame className={`${featureIconClass} text-[#5b9bff]`} strokeWidth={featureIconStroke} aria-hidden />
                       <h3 className={featureCardHeadline}>Brain gains</h3>
                     </div>
                     <p className={`${body} min-h-0 flex-1 text-pretty text-[#e9ece8]`}>
@@ -367,7 +453,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
                 <GlowCard accent="violet">
                   <div className="flex min-h-0 flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
                     <div className="flex shrink-0 items-center gap-3">
-                      <Users className={`${featureIconClass} text-[#2979ff]`} strokeWidth={featureIconStroke} aria-hidden />
+                      <Users className={`${featureIconClass} text-[#5b9bff]`} strokeWidth={featureIconStroke} aria-hidden />
                       <h3 className={featureCardHeadline}>The squad</h3>
                     </div>
                     <p className={`${body} min-h-0 text-pretty text-[#e9ece8]`}>
@@ -395,21 +481,21 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
               <h2 className={`${sectionTitle} text-[clamp(2.25rem,5vw,3.5rem)]`}>Why Tintomi?</h2>
               <ul className={`${body} mt-8 space-y-5 text-[#e9ece8]`}>
                 <li className="flex gap-4">
-                  <span className="mt-1 font-mono text-[#2979ff]">01</span>
+                  <span className="mt-1 font-mono text-[#5b9bff]">01</span>
                   <span>
                     <strong className="text-[#e9ece8]">Because the tuition here is zero.</strong> The market charges real money
                     for the same lessons. Learn to hold through a dip when the dip cannot touch your lunch money.
                   </span>
                 </li>
                 <li className="flex gap-4">
-                  <span className="mt-1 font-mono text-[#2979ff]">02</span>
+                  <span className="mt-1 font-mono text-[#5b9bff]">02</span>
                   <span>
                     <strong className="text-[#e9ece8]">Because nobody here talks down to you.</strong> No suits, no jargon walls,
                     no &quot;ask your parents.&quot; Just the mechanics, explained once, plainly.
                   </span>
                 </li>
                 <li className="flex gap-4">
-                  <span className="mt-1 font-mono text-[#2979ff]">03</span>
+                  <span className="mt-1 font-mono text-[#5b9bff]">03</span>
                   <span>
                     <strong className="text-[#e9ece8]">Because your friends are on the leaderboard.</strong> Financial literacy
                     as a solo chore fails. As a competition, it sticks.
@@ -453,7 +539,7 @@ export function LandingPage({ onGoToSignUp }: LandingPageProps) {
       <motion.button
         type="button"
         onClick={() => scrollToId('mission')}
-        className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 cursor-pointer rounded-full p-3 text-[#2979ff] outline-none transition hover:scale-105 hover:text-[#e9ece8] focus-visible:ring-2 focus-visible:ring-[#2979ff]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1412] sm:bottom-12 md:bottom-16"
+        className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 cursor-pointer rounded-full p-3 text-[#5b9bff] outline-none transition hover:scale-105 hover:text-[#e9ece8] focus-visible:ring-2 focus-visible:ring-[#2979ff]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1412] sm:bottom-12 md:bottom-16"
         aria-label="Scroll to next section"
         aria-hidden={!showHeroScrollCue}
         tabIndex={showHeroScrollCue ? 0 : -1}

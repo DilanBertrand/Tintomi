@@ -6,6 +6,8 @@ export type ChartStyle = 'candles' | 'line'
 type PriceChartProps = {
   points: ChartPoint[]
   range: ChartRange
+  /** Name of the asset, used to build the chart's accessible description. */
+  assetName?: string
   style?: ChartStyle
   /** Previous session close — drawn as a dashed reference line on the 1D view */
   previousClose?: number
@@ -76,6 +78,7 @@ function downsample(points: ChartPoint[], max: number): ChartPoint[] {
 export function PriceChart({
   points: rawPoints,
   range,
+  assetName = 'this asset',
   style = 'candles',
   previousClose,
   height = 240,
@@ -155,6 +158,29 @@ export function PriceChart({
 
   const hover = hoverIdx !== null && geom ? points[hoverIdx] : null
 
+  /*
+   * A price chart is meaningless to a screen reader as a pile of <rect>s, so we
+   * label the whole SVG with the same facts a sighted user reads off it: the
+   * period, where it started and ended, and the high and low.
+   */
+  const summary = (() => {
+    if (points.length < 2) return `Price chart for ${assetName}. No data available.`
+    const rangeWord =
+      range === '1d' ? 'today' : range === '1w' ? 'the past week' : range === '1m' ? 'the past month' : range === '3m' ? 'the past three months' : 'the past year'
+    const start = range === '1d' && typeof previousClose === 'number' ? previousClose : points[0].c
+    const end = points[points.length - 1].c
+    const changePct = start > 0 ? ((end - start) / start) * 100 : 0
+    const direction = changePct >= 0 ? 'up' : 'down'
+    const high = Math.max(...points.map((p) => p.h))
+    const low = Math.min(...points.map((p) => p.l))
+    return (
+      `Price chart for ${assetName} over ${rangeWord}. ` +
+      `Started at ${fmtPrice(start)} dollars and ended at ${fmtPrice(end)} dollars, ` +
+      `${direction} ${Math.abs(changePct).toFixed(2)} percent. ` +
+      `High ${fmtPrice(high)}, low ${fmtPrice(low)}.`
+    )
+  })()
+
   const idxFromX = (px: number) => {
     if (!geom) return null
     if (px < 0 || px > plotW) return null
@@ -168,6 +194,8 @@ export function PriceChart({
         <svg
           width={width}
           height={height}
+          role="img"
+          aria-label={summary}
           className="block"
           onMouseMove={(e) => {
             const rect = e.currentTarget.getBoundingClientRect()
@@ -292,7 +320,7 @@ export function PriceChart({
           ) : null}
         </svg>
       ) : (
-        <div className="flex h-full items-center justify-center text-xs text-[#6b756c]">
+        <div className="flex h-full items-center justify-center text-xs text-[#8d968e]">
           {loading ? 'Loading chart…' : 'No chart data'}
         </div>
       )}
@@ -304,17 +332,17 @@ export function PriceChart({
         >
           {style === 'candles' ? (
             <div className="flex gap-2">
-              <span className="text-[#6b756c]">
+              <span className="text-[#8d968e]">
                 O <span className="text-[#e9ece8]">{fmtPrice(hover.o)}</span>
               </span>
-              <span className="text-[#6b756c]">
+              <span className="text-[#8d968e]">
                 H <span className="text-[#e9ece8]">{fmtPrice(hover.h)}</span>
               </span>
-              <span className="text-[#6b756c]">
+              <span className="text-[#8d968e]">
                 L <span className="text-[#e9ece8]">{fmtPrice(hover.l)}</span>
               </span>
-              <span className="text-[#6b756c]">
-                C <span className={hover.c >= hover.o ? 'text-[#2979ff]' : 'text-[#e06a55]'}>{fmtPrice(hover.c)}</span>
+              <span className="text-[#8d968e]">
+                C <span className={hover.c >= hover.o ? 'text-[#5b9bff]' : 'text-[#e06a55]'}>{fmtPrice(hover.c)}</span>
               </span>
             </div>
           ) : (
@@ -324,8 +352,10 @@ export function PriceChart({
         </div>
       ) : null}
 
+      <p className="sr-only">{summary}</p>
+
       {loading && geom ? (
-        <div className="pointer-events-none absolute right-0 top-0 text-[10px] uppercase tracking-tighter text-[#6b756c]">
+        <div className="pointer-events-none absolute right-0 top-0 text-[10px] uppercase tracking-tighter text-[#8d968e]">
           updating…
         </div>
       ) : null}

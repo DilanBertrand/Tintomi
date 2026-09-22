@@ -46,7 +46,7 @@ export function Login({ onBack, onSwitchToSignUp }: LoginProps) {
         <button
           type="button"
           onClick={onBack}
-          className={`${head} mb-8 flex items-center gap-2 text-sm text-[#a7b0a8] transition hover:text-[#2979ff]`}
+          className={`${head} mb-8 flex items-center gap-2 text-sm text-[#a7b0a8] transition hover:text-[#5b9bff]`}
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back
@@ -74,7 +74,7 @@ export function Login({ onBack, onSwitchToSignUp }: LoginProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-xl border border-[#232b25] bg-[#0f1412] px-4 py-3 text-[#e9ece8] outline-none ring-[#2979ff]/0 transition placeholder:text-[#6b756c] focus:border-[#2979ff]/50 focus:ring-2 focus:ring-[#2979ff]/30"
+                className="w-full rounded-xl border border-[#232b25] bg-[#0f1412] px-4 py-3 text-[#e9ece8] outline-none ring-[#2979ff]/0 transition placeholder:text-[#8d968e] focus:border-[#2979ff]/50 focus:ring-2 focus:ring-[#2979ff]/30"
                 placeholder="the one you signed up with"
               />
             </div>

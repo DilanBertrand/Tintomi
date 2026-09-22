@@ -48,7 +48,7 @@ export function LevelUpToast({ level, onDone }: { level: number | null; onDone: 
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#2979ff]">Level up</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#5b9bff]">Level up</p>
             <p className="mt-1 text-2xl font-bold text-[#e9ece8]">Level {level}</p>
             <p className="mt-1 text-sm text-[#a7b0a8]">Nice. Keep the momentum going.</p>
           </motion.div>

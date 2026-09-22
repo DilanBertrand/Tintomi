@@ -81,9 +81,9 @@ export function TraderLeaderboard({ userId, live }: { userId: string; live: Live
   return (
     <Card title="Top traders" subtitle="Return % on the $1,000 start">
       {loading ? (
-        <p className="py-4 text-center text-sm text-[#5c665e]">Loading traders…</p>
+        <p className="py-4 text-center text-sm text-[#8d968e]">Loading traders…</p>
       ) : top.length === 0 ? (
-        <p className="py-4 text-center text-sm text-[#5c665e]">
+        <p className="py-4 text-center text-sm text-[#8d968e]">
           No trades yet. Buy something and claim the top spot.
         </p>
       ) : (
@@ -99,10 +99,10 @@ export function TraderLeaderboard({ userId, live }: { userId: string; live: Live
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="w-6 shrink-0 font-mono text-sm text-[#5c665e]">{i + 1}</span>
+                  <span className="w-6 shrink-0 font-mono text-sm text-[#8d968e]">{i + 1}</span>
                   <p className="truncate text-sm font-medium text-[#e9ece8]">
                     {r.name}
-                    {you ? <span className="ml-2 text-xs text-[#2979ff]">you</span> : null}
+                    {you ? <span className="ml-2 text-xs text-[#5b9bff]">you</span> : null}
                   </p>
                 </div>
                 <p className={`font-mono text-sm font-semibold ${up ? 'text-[#00d18f]' : 'text-[#ff6b5e]'}`}>
@@ -115,10 +115,10 @@ export function TraderLeaderboard({ userId, live }: { userId: string; live: Live
           {meOutsideTop && me ? (
             <li className="flex items-center justify-between rounded-xl border border-[#2979ff]/40 bg-[#2979ff]/5 px-3 py-2">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="w-6 shrink-0 font-mono text-sm text-[#5c665e]">{myRank + 1}</span>
+                <span className="w-6 shrink-0 font-mono text-sm text-[#8d968e]">{myRank + 1}</span>
                 <p className="truncate text-sm font-medium text-[#e9ece8]">
                   {me.name}
-                  <span className="ml-2 text-xs text-[#2979ff]">you</span>
+                  <span className="ml-2 text-xs text-[#5b9bff]">you</span>
                 </p>
               </div>
               <p
