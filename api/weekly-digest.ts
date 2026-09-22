@@ -18,6 +18,7 @@ import { createClient } from '@supabase/supabase-js'
 import { levels } from '../src/data/lessons.js'
 import { lotPrice, stocks } from '../src/data/stocks.js'
 import { fetchYahooChart, type ChartPayload } from './_lib/yahoo.js'
+import { unsubscribeUrl } from './_lib/unsubscribe.js'
 
 type VercelRequest = { method?: string; headers: Record<string, string | string[] | undefined> }
 type VercelResponse = { status: (c: number) => { json: (b: unknown) => void } }
@@ -35,6 +36,7 @@ type ProfileRow = {
   xp: number | null
   completed_lessons: unknown
   learn_streak: { streak?: number; lastStreakDate?: string } | null
+  email_opt_out?: boolean | null
   wallet: { balance?: unknown; portfolio?: unknown } | null
 }
 
@@ -68,6 +70,8 @@ export type Recap = {
   streak: number
   bestHolding: { name: string; pct: number } | null
   nextLesson: { id: string; title: string; level: string } | null
+  /** Per-recipient one-click opt-out. Null only if the signing secret is unset. */
+  unsubscribeUrl: string | null
 }
 
 function pct(a: number, b: number): number {
@@ -169,8 +173,18 @@ export function recapHtml(r: Recap): string {
       </table>
       ${lessonBlock}
       <p style="margin:28px 0 0;font-size:12px;color:#888">
-        Paper trading only — no real money. Prices from public market data.
+        Paper trading only — no real money. Prices from public market data. Tintomi is not a broker or adviser and
+        this is not financial advice.
         <a href="${SITE}/invest" style="color:#2979ff">Open Tintomi</a>
+      </p>
+      <p style="margin:12px 0 0;font-size:12px;color:#888">
+        ${
+          r.unsubscribeUrl
+            ? `You get this because you have a Tintomi account. <a href="${r.unsubscribeUrl}" style="color:#888">Unsubscribe from the weekly recap</a>.`
+            : 'You get this because you have a Tintomi account.'
+        }
+        <br />
+        <a href="${SITE}/privacy" style="color:#888">Privacy Policy</a>
       </p>
     </div>`
 }
@@ -193,7 +207,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { data: profiles, error } = await admin
     .from('profiles')
-    .select('id, username, full_name, xp, completed_lessons, learn_streak, wallet')
+    .select('id, username, full_name, xp, completed_lessons, learn_streak, wallet, email_opt_out')
   if (error) {
     res.status(502).json({ ok: false, error: error.message })
     return
@@ -263,13 +277,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   await admin.from('digest_runs').upsert({ week_of: weekOf, community_size: communitySize }, { onConflict: 'week_of' })
 
   const snapshotRows: SnapshotRow[] = []
-  const sends: { email: string; subject: string; html: string }[] = []
+  const sends: { email: string; subject: string; html: string; unsubscribeUrl: string | null }[] = []
 
   for (const v of valued) {
     const email = emailById.get(v.p.id)
     const rank = rankById.get(v.p.id) ?? valued.length
     snapshotRows.push({ user_id: v.p.id, week_of: weekOf, net_worth: v.netWorth, rank })
-    if (!email) continue
+    // Snapshots are still recorded for opted-out users (they drive next week's
+    // rank movement for everyone else); only the email is withheld.
+    if (!email || v.p.email_opt_out) continue
 
     const prev = lastSnap.get(v.p.id)
     let bestHolding: Recap['bestHolding'] = null
@@ -291,6 +307,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       streak: currentStreak(v.p.learn_streak),
       bestHolding,
       nextLesson: nextLesson(v.p.completed_lessons),
+      unsubscribeUrl: unsubscribeUrl(SITE, v.p.id),
     }
 
     const subjectReturn =
@@ -299,6 +316,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       email,
       subject: `Your week on Tintomi:${subjectReturn} rank #${rank}`,
       html: recapHtml(recap),
+      unsubscribeUrl: recap.unsubscribeUrl,
     })
   }
 
@@ -313,7 +331,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
-          body: JSON.stringify({ from: DIGEST_FROM, to: [m.email], subject: m.subject, html: m.html }),
+          body: JSON.stringify({
+            from: DIGEST_FROM,
+            to: [m.email],
+            subject: m.subject,
+            html: m.html,
+            ...(m.unsubscribeUrl
+              ? {
+                  headers: {
+                    'List-Unsubscribe': `<${m.unsubscribeUrl}>`,
+                    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                  },
+                }
+              : {}),
+          }),
         }),
       ),
     )
