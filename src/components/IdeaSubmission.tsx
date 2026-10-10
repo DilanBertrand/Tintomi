@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState, type FormEvent } from 'react'
 import { Card } from './Card'
-import { COMPANY } from '../lib/legal'
 import type { LegalSlug } from '../lib/routes'
 
 type Status = 'idle' | 'open' | 'sending' | 'sent' | 'error'
@@ -158,7 +157,7 @@ export function IdeaSubmission({ onOpenLegal }: { onOpenLegal: (slug: LegalSlug)
               >
                 Privacy Policy
               </button>
-              , or email {COMPANY.contactEmail} to have it deleted.
+              .
             </p>
             </form>
           </motion.div>

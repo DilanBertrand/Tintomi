@@ -143,12 +143,12 @@ export function Profile({ xp, portfolioValue, onAddXp, onOpenLegal }: ProfilePro
             ))}
           </div>
         </Card>
-        <Card title="YOUR DATA" subtitle="Download, correct or delete it">
+        <Card title="YOUR DATA" subtitle="Delete your account">
           <p className="text-sm leading-relaxed text-[#c3cbc4]">
-            You can ask us for a copy of everything we hold about you, have it corrected, or have your account and
-            data permanently deleted. We answer within 30 days and never charge for it.
+            You can have your account and all its data permanently deleted. We answer within 30 days and never
+            charge for it.
           </p>
-          <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
+          <div className="mt-4 flex">
             <a
               href={`mailto:${COMPANY.contactEmail}?subject=${encodeURIComponent('Delete my Tintomi account')}&body=${encodeURIComponent(
                 `Please delete my Tintomi account and all data associated with it.\n\nAccount email: ${user?.email ?? ''}\n`,
@@ -156,14 +156,6 @@ export function Profile({ xp, portfolioValue, onAddXp, onOpenLegal }: ProfilePro
               className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-[#e06a55]/50 px-5 text-sm font-semibold text-[#e06a55] transition hover:bg-[#e06a55]/10"
             >
               Delete my account
-            </a>
-            <a
-              href={`mailto:${COMPANY.contactEmail}?subject=${encodeURIComponent('Copy of my Tintomi data')}&body=${encodeURIComponent(
-                `Please send me a copy of the data you hold about me.\n\nAccount email: ${user?.email ?? ''}\n`,
-              )}`}
-              className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-[#232b25] px-5 text-sm font-semibold text-[#e9ece8] transition hover:bg-[#1a221c]"
-            >
-              Request my data
             </a>
           </div>
           <p className="mt-3 text-xs text-[#a7b0a8]">
