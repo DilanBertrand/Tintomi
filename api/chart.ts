@@ -6,8 +6,11 @@
 
 import { ALLOWED_SYMBOLS, fetchYahooChart, isChartRange } from './_lib/yahoo.js'
 
+import { allowRequestInMemory, clientIp } from './_lib/rate-limit.js'
+
 type VercelRequest = {
   method?: string
+  headers?: Record<string, string | string[] | undefined>
   query?: Record<string, string | string[] | undefined>
 }
 
@@ -26,6 +29,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
+  // Read-only and edge-cached, so a per-instance counter is proportionate here;
+  // it blunts a burst without adding a database round trip to every request.
+  if (!allowRequestInMemory(`chart:` + clientIp(req.headers ?? {}), 120, 60)) {
+    res.status(429).json({ ok: false, error: 'Too many requests. Slow down.' })
+    return
+  }
+
   const symbol = (first(req.query?.symbol) ?? '').toUpperCase()
   const range = first(req.query?.range) ?? '1d'
   if (!ALLOWED_SYMBOLS.has(symbol) || !isChartRange(range)) {
@@ -38,6 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300')
     res.status(200).json({ ok: true, ...payload })
   } catch (err) {
-    res.status(502).json({ ok: false, error: err instanceof Error ? err.message : 'Upstream error' })
+    console.error('upstream fetch failed:', err)
+    res.status(502).json({ ok: false, error: 'Upstream error' })
   }
 }

@@ -89,8 +89,19 @@ function toWallet(value: unknown): ProfileRow['wallet'] {
   return { balance: Math.max(0, v.balance), portfolio }
 }
 
+/**
+ * Columns the client is allowed to read. `select('*')` is deliberately avoided:
+ * the database only grants SELECT on these columns to the `authenticated` role,
+ * so a wildcard select is rejected outright. Payment identifiers
+ * (stripe_customer_id, stripe_subscription_id, pro_since) and email_opt_out are
+ * intentionally absent — nothing in the UI needs them, and withholding them
+ * keeps them out of reach of every signed-in user.
+ */
+const PROFILE_COLUMNS =
+  'id, full_name, username, xp, avatar_url, login_streak, last_streak_date, is_pro, is_admin, referral_code, referred_by, completed_lessons, completed_stories, learn_streak, wallet, created_at, updated_at' as const
+
 export async function fetchProfile(userId: string): Promise<ProfileRow | null> {
-  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+  const { data, error } = await supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).maybeSingle()
   if (error) {
     if (isMissingProfilesTableError(error)) {
       console.warn('[profiles] public.profiles table is missing — run supabase/setup_profiles.sql in Supabase.')
@@ -109,7 +120,7 @@ export async function ensureProfileRow(user: User): Promise<ProfileRow | null> {
 
   const meta = user.user_metadata as { full_name?: string } | undefined
   const full_name = meta?.full_name?.trim() || null
-  const { data, error } = await supabase.from('profiles').insert({ id: user.id, full_name }).select().single()
+  const { data, error } = await supabase.from('profiles').insert({ id: user.id, full_name }).select(PROFILE_COLUMNS).single()
 
   if (error) {
     if (isMissingProfilesTableError(error)) {
@@ -153,7 +164,7 @@ export async function loadProfileWithStreakSync(user: User): Promise<ProfileRow 
       last_streak_date: next.lastStreakDate,
     })
     .eq('id', user.id)
-    .select()
+    .select(PROFILE_COLUMNS)
     .single()
 
   if (error) {
@@ -206,7 +217,7 @@ export async function updateProfileFields(
       },
       { onConflict: 'id' },
     )
-    .select()
+    .select(PROFILE_COLUMNS)
     .single()
 
   if (error) {
@@ -258,7 +269,7 @@ export async function setProfileAvatarUrl(userId: string, avatarUrl: string | nu
     .from('profiles')
     .update({ avatar_url: avatarUrl })
     .eq('id', userId)
-    .select()
+    .select(PROFILE_COLUMNS)
     .single()
 
   if (error) {

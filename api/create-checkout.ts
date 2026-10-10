@@ -101,10 +101,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).json({ ok: true, url: session.url })
   } catch (err) {
     console.error('create-checkout failed:', err)
-    res.status(502).json({
-      ok: false,
-      error: 'Could not start checkout. Try again shortly.',
-      detail: err instanceof Error ? err.message : String(err),
-    })
+    // The message is deliberately generic: upstream errors can carry internal
+    // identifiers and configuration details. The full error stays in the logs.
+    res.status(502).json({ ok: false, error: 'Could not start checkout. Try again shortly.' })
   }
 }

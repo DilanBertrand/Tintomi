@@ -13,8 +13,11 @@
  * is exactly the founder's inbox here.
  */
 
+import { allowRequest, clientIp } from './_lib/rate-limit.js'
+
 type VercelRequest = {
   method?: string
+  headers?: Record<string, string | string[] | undefined>
   body?: unknown
 }
 
@@ -28,6 +31,19 @@ const FOUNDER_EMAIL = 'bertranddilan32@gmail.com'
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ ok: false, error: 'Method not allowed' })
+    return
+  }
+
+  // Every accepted request sends an email, so this is the endpoint most worth
+  // abusing. Five per IP per hour is far above genuine use.
+  const allowed = await allowRequest({
+    bucket: 'submit-idea',
+    identifier: clientIp(req.headers ?? {}),
+    limit: 5,
+    windowSeconds: 3600,
+  })
+  if (!allowed) {
+    res.status(429).json({ ok: false, error: 'Too many ideas sent. Please try again later.' })
     return
   }
 
@@ -98,7 +114,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(502).json({
         ok: false,
         error: 'Could not deliver the idea. Try again shortly.',
-        detail: result.message ?? `upstream status ${forward.status}: ${rawBody.slice(0, 200)}`,
       })
       return
     }
@@ -108,7 +123,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(502).json({
       ok: false,
       error: 'Could not deliver the idea. Try again shortly.',
-      detail: err instanceof Error ? err.message : String(err),
     })
   }
 }
